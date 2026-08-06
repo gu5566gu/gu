@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📍 座標待認領分享板</title>
     <style>
-        /* 樣式保留，並新增 loading 動畫樣式 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #2c3e50; }
         .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
@@ -14,7 +13,6 @@
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
         button.submit-btn { background-color: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
         button.submit-btn:hover { background-color: #2980b9; }
-        button:disabled { background-color: #95a5a6 !important; cursor: not-allowed; }
         .card { background: #fff; padding: 15px 20px; border-radius: 8px; border-left: 5px solid #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
         .card.claimed { border-left: 5px solid #95a5a6; background: #fdfdfd; opacity: 0.85; }
         .card-info { flex-grow: 1; }
@@ -34,8 +32,11 @@
         button.delete-btn:hover { background-color: #c0392b; }
         .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
         
-        /* 系統提示區塊 */
-        #statusMsg { text-align: center; font-weight: bold; color: #e67e22; margin-bottom: 15px; height: 20px; }
+        /* 狀態提示區塊 */
+        #statusMsg { text-align: center; font-weight: bold; margin-bottom: 15px; min-height: 24px; transition: all 0.3s; }
+        .status-syncing { color: #e67e22; }
+        .status-success { color: #27ae60; }
+        .status-error { color: #e74c3c; }
 
         @media (max-width: 600px) {
             .card { flex-direction: column; align-items: flex-start; }
@@ -47,10 +48,8 @@
 <body>
 
     <h1>📍 雲端座標即時分享板</h1>
-<button onclick="fetchData()" style="display:block; margin: 0 auto 15px auto; padding: 10px 20px; font-weight:bold; border-radius:4px; background:#e67e22; color:white; border:none; cursor:pointer; width:100%;">🔄 點我載入最新座標</button>
     
-    <!-- 顯示讀取中的提示 -->
-    <div id="statusMsg">連線至試算表讀取中...</div>
+    <div id="statusMsg"></div>
 
     <div class="form-container">
         <form id="shareForm">
@@ -62,7 +61,6 @@
                 <label for="itemName">🎯 目標名稱</label>
                 <select id="itemName" required>
                     <option value="" disabled selected>請選擇目標 (必填)</option>
-<option value="巨菇">巨菇</option>
                     <option value="大水">大水</option>
                     <option value="大火">大火</option>
                     <option value="大電">大電</option>
@@ -76,7 +74,7 @@
                     <option value="大白">大白</option>
                     <option value="大灰">大灰</option>
                     <option value="大冰藍">大冰藍</option>
-                    
+                    <option value="巨菇">巨菇</option>
                 </select>
             </div>
             <div class="form-group">
@@ -92,74 +90,89 @@
     </div>
 
     <div id="listContainer">
-        <!-- 列表會在這裡渲染 -->
+        <!-- 列表會在這裡動態渲染 -->
     </div>
 
     <script>
         // ==========================================
-        // ⚠️ 請將下方的網址換成你剛剛在 GAS 部署得到的「網頁應用程式網址」
+        // ⚠️ 請填入你的 Google Apps Script 部署網址
         // ==========================================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw74I5WUjNcSrJ13bFEjeEb8bhm7iJFFdmJfPxnAfWmBoSv7YMSiQkqvg3fbMu4YIFq/exec";
         // ==========================================
 
+        let localDataList = []; // 當前畫面的資料快取
         const statusMsg = document.getElementById('statusMsg');
-        
-        // 從試算表拉取資料
-        function fetchData(isBackground = false) {
-            if (!isBackground) statusMsg.textContent = "🔄 讀取最新資料中...";
+
+        function setStatus(text, type = 'syncing') {
+            statusMsg.textContent = text;
+            statusMsg.className = 'status-' + type;
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (statusMsg.className === 'status-success') {
+                        statusMsg.textContent = '';
+                    }
+                }, 3000);
+            }
+        }
+
+        // 1. 從試算表同步資料
+        function fetchData(silent = false) {
+            if (!silent) setStatus("🔄 正在載入最新資料...", "syncing");
             
             fetch(GAS_URL)
                 .then(response => response.json())
                 .then(data => {
-                    renderList(data);
-                    statusMsg.textContent = ""; // 讀取成功清空提示
+                    localDataList = data;
+                    renderList();
+                    if (!silent) setStatus("", "success");
                 })
                 .catch(error => {
-                    statusMsg.textContent = "❌ 讀取失敗，請稍後再試";
-                    console.error("Error:", error);
+                    setStatus("❌ 載入失敗，請確認網路連線", "error");
+                    console.error("Fetch Error:", error);
                 });
         }
 
-       // 渲染列表
-        function renderList(dataArray) {
+        // 2. 畫面的極速渲染 (0.1秒呈現)
+        function renderList() {
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
             
-            if (dataArray.length === 0) {
+            if (!localDataList || localDataList.length === 0) {
                 container.innerHTML = '<p class="empty-msg">目前沒有待認領的座標，快來分享第一個吧！</p>';
                 return;
             }
 
-            // 反轉讓最新的在最上面
-            dataArray.reverse().forEach((item) => {
-                
-                // === 新增：時間格式轉換邏輯 ===
+            // 複製一份陣列並反轉，讓最新的在最上面
+            const displayList = [...localDataList].reverse();
+
+            displayList.forEach((item) => {
+                // 格式化台灣時間
                 let displayTime = item.time;
                 try {
                     const dateObj = new Date(item.time);
                     if (!isNaN(dateObj)) {
                         displayTime = dateObj.toLocaleString('zh-TW', {
-                            timeZone: 'Asia/Taipei', // 強制台灣時間
+                            timeZone: 'Asia/Taipei',
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',
                             hour: '2-digit',
                             minute: '2-digit',
-                            hour12: false // 使用 24 小時制
+                            hour12: false
                         });
                     }
                 } catch (e) {}
-                // ============================
 
-                const cardClass = item.isClaimed === true || item.isClaimed === "true" ? 'card claimed' : 'card';
+                const isClaimedBool = item.isClaimed === true || item.isClaimed === "true";
+                const cardClass = isClaimedBool ? 'card claimed' : 'card';
                 
-                const claimerHtml = (item.isClaimed === true || item.isClaimed === "true")
+                const claimerHtml = isClaimedBool
                     ? `<p class="claimer-text">🙋 領取者：${item.claimer}</p>` 
                     : '';
 
-                const actionBtnHtml = (item.isClaimed === true || item.isClaimed === "true")
-                    ? `<button class="delete-btn" onclick="deleteItem('${item.id}', this)">🗑️ 刪除</button>`
-                    : `<button class="claim-btn" onclick="claimItem('${item.id}', this)">✅ 登記領取</button>`;
+                const actionBtnHtml = isClaimedBool
+                    ? `<button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>`
+                    : `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 登記領取</button>`;
 
                 const card = document.createElement('div');
                 card.className = cardClass;
@@ -174,7 +187,7 @@
                         </p>
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
                         ${claimerHtml}
-                        <p class="time-stamp">發布時間：${displayTime}</p> <!-- 這裡已改成轉換後的格式 -->
+                        <p class="time-stamp">發布時間：${displayTime}</p>
                     </div>
                     <div class="card-actions">
                         ${actionBtnHtml}
@@ -184,51 +197,101 @@
             });
         }
 
-        // 發送 POST 請求給 GAS (新增/修改/刪除)
-        function sendPostRequest(payload, btnElement, loadingText, successMsg) {
-            btnElement.disabled = true;
-            const originalText = btnElement.innerText;
-            btnElement.innerText = loadingText;
-            statusMsg.textContent = "⏳ 資料同步至試算表中...";
+        // 3. 背景同步工具：把資料悄悄發送給 GAS
+        function syncToGAS(payload, actionName) {
+            setStatus(`⏳ 背景同步中 (${actionName})...`, "syncing");
 
             fetch(GAS_URL, {
                 method: 'POST',
-                // 為了避免複雜的 CORS 問題，這裡以 plain/text 格式傳送 JSON 字串
-                body: JSON.stringify(payload) 
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(result => {
-                statusMsg.textContent = "✅ " + successMsg;
-                fetchData(false); // 成功後重新拉取最新資料
+                setStatus(`✅ ${actionName}成功！`, "success");
             })
             .catch(error => {
-                statusMsg.textContent = "❌ 操作失敗";
-                btnElement.disabled = false;
-                btnElement.innerText = originalText;
-                console.error("Error:", error);
+                setStatus(`⚠️ 背景同步異常，正重新校對雲端資料...`, "error");
+                console.error("Sync Error:", error);
+                // 若背景同步失敗，重新拉取雲端資料進行畫面修復
+                fetchData(true);
             });
         }
 
-        // 處理發布
+        // --- 操作邏輯 (全部採用樂觀更新) ---
+
+        // 【發布邏輯】
         document.getElementById('shareForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const payload = {
-                action: 'add',
+            const tempId = 'temp_' + Date.now(); // 產生臨時 ID
+            const newItem = {
+                id: tempId,
                 publisher: document.getElementById('publisher').value,
                 name: document.getElementById('itemName').value,
                 coords: document.getElementById('coords').value,
                 note: document.getElementById('note').value,
-                time: new Date().toLocaleString('zh-TW')
+                time: new Date().toISOString(),
+                isClaimed: false,
+                claimer: ""
             };
 
-            const submitBtn = document.getElementById('submitBtn');
-            sendPostRequest(payload, submitBtn, "發布中...", "發布成功！");
+            // 1. 立刻更新畫面
+            localDataList.push(newItem);
+            renderList();
 
-            // 清空輸入框
+            // 2. 清空輸入框
             document.getElementById('coords').value = '';
             document.getElementById('note').value = '';
+
+            // 3. 背景傳送給 GAS
+            const payload = {
+                action: 'add',
+                publisher: newItem.publisher,
+                name: newItem.name,
+                coords: newItem.coords,
+                note: newItem.note,
+                time: newItem.time
+            };
+            syncToGAS(payload, "發布");
         });
+
+        // 【領取邏輯】
+        window.claimItem = function(id) {
+            const claimerName = prompt("請輸入你的遊戲暱稱 (領取者)：");
+            if (claimerName && claimerName.trim() !== "") {
+                const target = localDataList.find(item => item.id === id);
+                if (target) {
+                    // 1. 立刻更新畫面
+                    target.isClaimed = true;
+                    target.claimer = claimerName.trim();
+                    renderList();
+
+                    // 2. 背景傳送給 GAS
+                    const payload = {
+                        action: 'claim',
+                        id: id,
+                        claimer: claimerName.trim()
+                    };
+                    syncToGAS(payload, "領取");
+                }
+            }
+        };
+
+        // 【刪除邏輯】
+        window.deleteItem = function(id) {
+            if (confirm('確定要將此座標從列表中完全刪除嗎？')) {
+                // 1. 立刻從畫面移除
+                localDataList = localDataList.filter(item => item.id !== id);
+                renderList();
+
+                // 2. 背景傳送給 GAS
+                const payload = {
+                    action: 'delete',
+                    id: id
+                };
+                syncToGAS(payload, "刪除");
+            }
+        };
 
         // 複製座標
         window.copyCoords = function(coords) {
@@ -239,34 +302,8 @@
             });
         };
 
-        // 領取功能
-        window.claimItem = function(id, btnElement) {
-            const claimerName = prompt("請輸入你的遊戲暱稱 (領取者)：");
-            if (claimerName && claimerName.trim() !== "") {
-                const payload = {
-                    action: 'claim',
-                    id: id,
-                    claimer: claimerName.trim()
-                };
-                sendPostRequest(payload, btnElement, "處理中...", "領取成功！");
-            }
-        };
-
-        // 刪除功能
-        window.deleteItem = function(id, btnElement) {
-            if(confirm('確定要將此座標從試算表中完全刪除嗎？')) {
-                const payload = {
-                    action: 'delete',
-                    id: id
-                };
-                sendPostRequest(payload, btnElement, "刪除中...", "刪除成功！");
-            }
-        };
-
-        // 初始化首次讀取
+        // 網頁開啟時第一次拉取資料
         fetchData();
-
-        
     </script>
 </body>
 </html>
