@@ -119,7 +119,7 @@
                 });
         }
 
-        // 渲染列表
+       // 渲染列表
         function renderList(dataArray) {
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
@@ -131,6 +131,25 @@
 
             // 反轉讓最新的在最上面
             dataArray.reverse().forEach((item) => {
+                
+                // === 新增：時間格式轉換邏輯 ===
+                let displayTime = item.time;
+                try {
+                    const dateObj = new Date(item.time);
+                    if (!isNaN(dateObj)) {
+                        displayTime = dateObj.toLocaleString('zh-TW', {
+                            timeZone: 'Asia/Taipei', // 強制台灣時間
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false // 使用 24 小時制
+                        });
+                    }
+                } catch (e) {}
+                // ============================
+
                 const cardClass = item.isClaimed === true || item.isClaimed === "true" ? 'card claimed' : 'card';
                 
                 const claimerHtml = (item.isClaimed === true || item.isClaimed === "true")
@@ -154,7 +173,7 @@
                         </p>
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
                         ${claimerHtml}
-                        <p class="time-stamp">發布時間：${item.time}</p>
+                        <p class="time-stamp">發布時間：${displayTime}</p> <!-- 這裡已改成轉換後的格式 -->
                     </div>
                     <div class="card-actions">
                         ${actionBtnHtml}
