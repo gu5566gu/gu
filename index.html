@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📍 菇菇分享</title>
+    <title>📍 座標待認領分享板</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #2c3e50; }
@@ -32,7 +32,6 @@
         button.delete-btn:hover { background-color: #c0392b; }
         .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
         
-        /* 狀態提示區塊 */
         #statusMsg { text-align: center; font-weight: bold; margin-bottom: 15px; min-height: 24px; transition: all 0.3s; }
         .status-syncing { color: #e67e22; }
         .status-success { color: #27ae60; }
@@ -47,21 +46,28 @@
 </head>
 <body>
 
-    <h1>📍 菇菇分享</h1>
+    <h1>📍 雲端座標即時分享板</h1>
     
     <div id="statusMsg"></div>
 
     <div class="form-container">
         <form id="shareForm">
+            <!-- 發布者下拉選單 -->
             <div class="form-group">
                 <label for="publisher">👤 發布者</label>
-                <input type="text" id="publisher" placeholder="請輸入你的遊戲暱稱" required>
+                <select id="publisher" required>
+                    <option value="" disabled selected>請選擇發布者 (必填)</option>
+                    <option value="不具名">不具名</option>
+                    <option value="小天使">小天使</option>
+                    <option value="Sabrina">Sabrina</option>
+                    <option value="思思">思思</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="itemName">🎯 目標名稱</label>
                 <select id="itemName" required>
                     <option value="" disabled selected>請選擇目標 (必填)</option>
-<option value="巨菇">巨菇</option>
+                    <option value="巨菇">巨菇</option>
                     <option value="大水">大水</option>
                     <option value="大火">大火</option>
                     <option value="大電">大電</option>
@@ -90,9 +96,7 @@
         </form>
     </div>
 
-    <div id="listContainer">
-        <!-- 列表會在這裡動態渲染 -->
-    </div>
+    <div id="listContainer"></div>
 
     <script>
         // ==========================================
@@ -101,7 +105,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw74I5WUjNcSrJ13bFEjeEb8bhm7iJFFdmJfPxnAfWmBoSv7YMSiQkqvg3fbMu4YIFq/exec";
         // ==========================================
 
-        let localDataList = []; // 當前畫面的資料快取
+        let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
 
         function setStatus(text, type = 'syncing') {
@@ -116,7 +120,6 @@
             }
         }
 
-        // 1. 從試算表同步資料
         function fetchData(silent = false) {
             if (!silent) setStatus("🔄 正在載入最新資料...", "syncing");
             
@@ -133,7 +136,6 @@
                 });
         }
 
-        // 2. 畫面的極速渲染 (0.1秒呈現)
         function renderList() {
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
@@ -143,11 +145,9 @@
                 return;
             }
 
-            // 複製一份陣列並反轉，讓最新的在最上面
             const displayList = [...localDataList].reverse();
 
             displayList.forEach((item) => {
-                // 格式化台灣時間
                 let displayTime = item.time;
                 try {
                     const dateObj = new Date(item.time);
@@ -198,7 +198,6 @@
             });
         }
 
-        // 3. 背景同步工具：把資料悄悄發送給 GAS
         function syncToGAS(payload, actionName) {
             setStatus(`⏳ 背景同步中 (${actionName})...`, "syncing");
 
@@ -213,18 +212,14 @@
             .catch(error => {
                 setStatus(`⚠️ 背景同步異常，正重新校對雲端資料...`, "error");
                 console.error("Sync Error:", error);
-                // 若背景同步失敗，重新拉取雲端資料進行畫面修復
                 fetchData(true);
             });
         }
 
-        // --- 操作邏輯 (全部採用樂觀更新) ---
-
-        // 【發布邏輯】
         document.getElementById('shareForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const tempId = 'temp_' + Date.now(); // 產生臨時 ID
+            const tempId = 'temp_' + Date.now();
             const newItem = {
                 id: tempId,
                 publisher: document.getElementById('publisher').value,
@@ -236,15 +231,12 @@
                 claimer: ""
             };
 
-            // 1. 立刻更新畫面
             localDataList.push(newItem);
             renderList();
 
-            // 2. 清空輸入框
             document.getElementById('coords').value = '';
             document.getElementById('note').value = '';
 
-            // 3. 背景傳送給 GAS
             const payload = {
                 action: 'add',
                 publisher: newItem.publisher,
@@ -256,18 +248,15 @@
             syncToGAS(payload, "發布");
         });
 
-        // 【領取邏輯】
         window.claimItem = function(id) {
             const claimerName = prompt("請輸入你的遊戲暱稱 (領取者)：");
             if (claimerName && claimerName.trim() !== "") {
                 const target = localDataList.find(item => item.id === id);
                 if (target) {
-                    // 1. 立刻更新畫面
                     target.isClaimed = true;
                     target.claimer = claimerName.trim();
                     renderList();
 
-                    // 2. 背景傳送給 GAS
                     const payload = {
                         action: 'claim',
                         id: id,
@@ -278,14 +267,11 @@
             }
         };
 
-        // 【刪除邏輯】
         window.deleteItem = function(id) {
             if (confirm('確定要將此座標從列表中完全刪除嗎？')) {
-                // 1. 立刻從畫面移除
                 localDataList = localDataList.filter(item => item.id !== id);
                 renderList();
 
-                // 2. 背景傳送給 GAS
                 const payload = {
                     action: 'delete',
                     id: id
@@ -294,7 +280,6 @@
             }
         };
 
-        // 複製座標
         window.copyCoords = function(coords) {
             navigator.clipboard.writeText(coords).then(() => {
                 alert('✅ 座標已複製：' + coords);
@@ -303,7 +288,6 @@
             });
         };
 
-        // 網頁開啟時第一次拉取資料
         fetchData();
     </script>
 </body>
