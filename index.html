@@ -47,6 +47,7 @@
 <body>
 
     <h1>📍 雲端座標即時分享板</h1>
+<button onclick="fetchData()" style="display:block; margin: 0 auto 15px auto; padding: 10px 20px; font-weight:bold; border-radius:4px; background:#e67e22; color:white; border:none; cursor:pointer; width:100%;">🔄 點我載入最新座標</button>
     
     <!-- 顯示讀取中的提示 -->
     <div id="statusMsg">連線至試算表讀取中...</div>
@@ -245,9 +246,7 @@
         // 初始化首次讀取
         fetchData();
 
-        // 背景每 1 秒自動刷新一次 (模擬即時同步)
-        setInterval(() => fetchData(true), 1000); 
-
+        
     </script>
 </body>
 </html>
