@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📍 座標待認領分享板</title>
+    <title>📍 菇菇分享</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #2c3e50; }
@@ -46,8 +46,8 @@
 </head>
 <body>
 
-    <h1>📍 雲端座標即時分享板</h1>
-    
+    <h1>📍 菇菇分享</h1>
+    <button onclick="fetchData()" style="display:block; margin: 0 auto 15px auto; padding: 10px 20px; font-weight:bold; border-radius:4px; background:#e67e22; color:white; border:none; cursor:pointer; width:100%;">🔄手動重整</button>
     <div id="statusMsg"></div>
 
     <div class="form-container">
@@ -59,6 +59,7 @@
                     <option value="" disabled selected>請選擇發布者 (必填)</option>
                     <option value="不具名">不具名</option>
                     <option value="小天使">小天使</option>
+                    <option value="林小咪">林小咪</option>
                     <option value="Sabrina">Sabrina</option>
                     <option value="思思">思思</option>
                 </select>
