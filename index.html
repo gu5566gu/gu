@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📍 座標待認領分享板</title>
+    <style>
+        /* 樣式保留，並新增 loading 動畫樣式 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; color: #2c3e50; }
+        .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button.submit-btn { background-color: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+        button.submit-btn:hover { background-color: #2980b9; }
+        button:disabled { background-color: #95a5a6 !important; cursor: not-allowed; }
+        .card { background: #fff; padding: 15px 20px; border-radius: 8px; border-left: 5px solid #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
+        .card.claimed { border-left: 5px solid #95a5a6; background: #fdfdfd; opacity: 0.85; }
+        .card-info { flex-grow: 1; }
+        .card-info h3 { margin: 0 0 10px 0; color: #2c3e50; }
+        .card-info p { margin: 5px 0; line-height: 1.4; }
+        .card-info a { color: #3498db; text-decoration: none; font-weight: bold; }
+        .card-info a:hover { text-decoration: underline; }
+        .time-stamp { font-size: 0.85em; color: #7f8c8d; margin-top: 8px !important; }
+        .claimer-text { color: #27ae60; font-weight: bold; background: #e8f8f5; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 5px !important; }
+        button.copy-btn { background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-left: 8px; color: #2c3e50; }
+        button.copy-btn:hover { background-color: #e0e0e0; }
+        .card-actions { display: flex; flex-direction: column; gap: 10px; margin-left: 15px; }
+        button.claim-btn, button.delete-btn { color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; width: 120px; }
+        button.claim-btn { background-color: #2ecc71; }
+        button.claim-btn:hover { background-color: #27ae60; }
+        button.delete-btn { background-color: #e74c3c; }
+        button.delete-btn:hover { background-color: #c0392b; }
+        .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
+        
+        /* 系統提示區塊 */
+        #statusMsg { text-align: center; font-weight: bold; color: #e67e22; margin-bottom: 15px; height: 20px; }
+
+        @media (max-width: 600px) {
+            .card { flex-direction: column; align-items: flex-start; }
+            .card-actions { margin-left: 0; margin-top: 15px; width: 100%; }
+            button.claim-btn, button.delete-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📍 雲端座標即時分享板</h1>
+    
+    <!-- 顯示讀取中的提示 -->
+    <div id="statusMsg">連線至試算表讀取中...</div>
+
+    <div class="form-container">
+        <form id="shareForm">
+            <div class="form-group">
+                <label for="publisher">👤 發布者</label>
+                <input type="text" id="publisher" placeholder="請輸入你的遊戲暱稱" required>
+            </div>
+            <div class="form-group">
+                <label for="itemName">🎯 目標名稱</label>
+                <select id="itemName" required>
+                    <option value="" disabled selected>請選擇目標 (必填)</option>
+                    <option value="大水">大水</option>
+                    <option value="大火">大火</option>
+                    <option value="大電">大電</option>
+                    <option value="大水晶">大水晶</option>
+                    <option value="大毒">大毒</option>
+                    <option value="大紅">大紅</option>
+                    <option value="大粉紅">大粉紅</option>
+                    <option value="大黃">大黃</option>
+                    <option value="大藍">大藍</option>
+                    <option value="大紫">大紫</option>
+                    <option value="大白">大白</option>
+                    <option value="大灰">大灰</option>
+                    <option value="大冰藍">大冰藍</option>
+                    <option value="巨菇">巨菇</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="coords">📍 座標 (緯度, 經度)</label>
+                <input type="text" id="coords" placeholder="例如：25.0339, 121.5645" required>
+            </div>
+            <div class="form-group">
+                <label for="note">📝 備註說明 (選填)</label>
+                <input type="text" id="note" placeholder="例如：剩餘時間 2小時 / 缺戰力">
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">發布座標</button>
+        </form>
+    </div>
+
+    <div id="listContainer">
+        <!-- 列表會在這裡渲染 -->
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚠️ 請將下方的網址換成你剛剛在 GAS 部署得到的「網頁應用程式網址」
+        // ==========================================
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw74I5WUjNcSrJ13bFEjeEb8bhm7iJFFdmJfPxnAfWmBoSv7YMSiQkqvg3fbMu4YIFq/exec";
+        // ==========================================
+
+        const statusMsg = document.getElementById('statusMsg');
+        
+        // 從試算表拉取資料
+        function fetchData(isBackground = false) {
+            if (!isBackground) statusMsg.textContent = "🔄 讀取最新資料中...";
+            
+            fetch(GAS_URL)
+                .then(response => response.json())
+                .then(data => {
+                    renderList(data);
+                    statusMsg.textContent = ""; // 讀取成功清空提示
+                })
+                .catch(error => {
+                    statusMsg.textContent = "❌ 讀取失敗，請稍後再試";
+                    console.error("Error:", error);
+                });
+        }
+
+        // 渲染列表
+        function renderList(dataArray) {
+            const container = document.getElementById('listContainer');
+            container.innerHTML = '';
+            
+            if (dataArray.length === 0) {
+                container.innerHTML = '<p class="empty-msg">目前沒有待認領的座標，快來分享第一個吧！</p>';
+                return;
+            }
+
+            // 反轉讓最新的在最上面
+            dataArray.reverse().forEach((item) => {
+                const cardClass = item.isClaimed === true || item.isClaimed === "true" ? 'card claimed' : 'card';
+                
+                const claimerHtml = (item.isClaimed === true || item.isClaimed === "true")
+                    ? `<p class="claimer-text">🙋 領取者：${item.claimer}</p>` 
+                    : '';
+
+                const actionBtnHtml = (item.isClaimed === true || item.isClaimed === "true")
+                    ? `<button class="delete-btn" onclick="deleteItem('${item.id}', this)">🗑️ 刪除</button>`
+                    : `<button class="claim-btn" onclick="claimItem('${item.id}', this)">✅ 登記領取</button>`;
+
+                const card = document.createElement('div');
+                card.className = cardClass;
+                card.innerHTML = `
+                    <div class="card-info">
+                        <p><strong>👤 發布者：</strong> ${item.publisher}</p>
+                        <h3>🍄 ${item.name}</h3>
+                        <p>
+                            <strong>📍 座標：</strong> 
+                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.coords)}" target="_blank">${item.coords}</a>
+                            <button class="copy-btn" onclick="copyCoords('${item.coords}')">📋 複製</button>
+                        </p>
+                        <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
+                        ${claimerHtml}
+                        <p class="time-stamp">發布時間：${item.time}</p>
+                    </div>
+                    <div class="card-actions">
+                        ${actionBtnHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 發送 POST 請求給 GAS (新增/修改/刪除)
+        function sendPostRequest(payload, btnElement, loadingText, successMsg) {
+            btnElement.disabled = true;
+            const originalText = btnElement.innerText;
+            btnElement.innerText = loadingText;
+            statusMsg.textContent = "⏳ 資料同步至試算表中...";
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                // 為了避免複雜的 CORS 問題，這裡以 plain/text 格式傳送 JSON 字串
+                body: JSON.stringify(payload) 
+            })
+            .then(response => response.json())
+            .then(result => {
+                statusMsg.textContent = "✅ " + successMsg;
+                fetchData(false); // 成功後重新拉取最新資料
+            })
+            .catch(error => {
+                statusMsg.textContent = "❌ 操作失敗";
+                btnElement.disabled = false;
+                btnElement.innerText = originalText;
+                console.error("Error:", error);
+            });
+        }
+
+        // 處理發布
+        document.getElementById('shareForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const payload = {
+                action: 'add',
+                publisher: document.getElementById('publisher').value,
+                name: document.getElementById('itemName').value,
+                coords: document.getElementById('coords').value,
+                note: document.getElementById('note').value,
+                time: new Date().toLocaleString('zh-TW')
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            sendPostRequest(payload, submitBtn, "發布中...", "發布成功！");
+
+            // 清空輸入框
+            document.getElementById('coords').value = '';
+            document.getElementById('note').value = '';
+        });
+
+        // 複製座標
+        window.copyCoords = function(coords) {
+            navigator.clipboard.writeText(coords).then(() => {
+                alert('✅ 座標已複製：' + coords);
+            }).catch(err => {
+                alert('❌ 複製失敗，請手動複製');
+            });
+        };
+
+        // 領取功能
+        window.claimItem = function(id, btnElement) {
+            const claimerName = prompt("請輸入你的遊戲暱稱 (領取者)：");
+            if (claimerName && claimerName.trim() !== "") {
+                const payload = {
+                    action: 'claim',
+                    id: id,
+                    claimer: claimerName.trim()
+                };
+                sendPostRequest(payload, btnElement, "處理中...", "領取成功！");
+            }
+        };
+
+        // 刪除功能
+        window.deleteItem = function(id, btnElement) {
+            if(confirm('確定要將此座標從試算表中完全刪除嗎？')) {
+                const payload = {
+                    action: 'delete',
+                    id: id
+                };
+                sendPostRequest(payload, btnElement, "刪除中...", "刪除成功！");
+            }
+        };
+
+        // 初始化首次讀取
+        fetchData();
+
+        // 背景每 10 秒自動刷新一次 (模擬即時同步)
+        setInterval(() => fetchData(true), 10000); 
+
+    </script>
+</body>
+</html>
