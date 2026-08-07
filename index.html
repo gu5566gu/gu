@@ -21,7 +21,9 @@
         .card-info a { color: #3498db; text-decoration: none; font-weight: bold; }
         .card-info a:hover { text-decoration: underline; }
         .time-stamp { font-size: 0.85em; color: #7f8c8d; margin-top: 8px !important; }
+        .local-time { font-size: 0.85em; color: #d35400; font-weight: 600; margin-top: 2px !important; }
         .claimer-text { color: #27ae60; font-weight: bold; background: #e8f8f5; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 5px !important; }
+        .country-tag { background: #eef2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; margin-left: 5px; border: 1px solid #dcdfe6; }
         button.copy-btn { background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-left: 8px; color: #2c3e50; }
         button.copy-btn:hover { background-color: #e0e0e0; }
         .card-actions { display: flex; flex-direction: column; gap: 10px; margin-left: 15px; }
@@ -32,6 +34,7 @@
         button.delete-btn:hover { background-color: #c0392b; }
         .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
         
+        /* 狀態訊息 */
         #statusMsg { text-align: center; font-weight: bold; margin-bottom: 15px; min-height: 24px; transition: all 0.3s; }
         .status-syncing { color: #e67e22; }
         .status-success { color: #27ae60; }
@@ -39,26 +42,26 @@
 
         @media (max-width: 600px) {
             .card { flex-direction: column; align-items: flex-start; }
-            .card-actions { margin-left: 0; margin-top: 15px; width: 100%; }
-            button.claim-btn, button.delete-btn { width: 100%; }
+            .card-actions { margin-left: 0; margin-top: 15px; width: 100%; flex-direction: row; }
+            button.claim-btn, button.delete-btn { flex: 1; width: auto; }
         }
     </style>
 </head>
 <body>
 
     <h1>📍 菇菇分享</h1>
-    <button onclick="fetchData()" style="display:block; margin: 0 auto 15px auto; padding: 10px 20px; font-weight:bold; border-radius:4px; background:#e67e22; color:white; border:none; cursor:pointer; width:100%;">🔄手動重整</button>
+    
     <div id="statusMsg"></div>
 
     <div class="form-container">
         <form id="shareForm">
-            <!-- 發布者下拉選單 -->
             <div class="form-group">
                 <label for="publisher">👤 發布者</label>
                 <select id="publisher" required>
                     <option value="" disabled selected>請選擇發布者 (必填)</option>
-                    <option value="不具名">不具名</option>
+              <option value="不具名">不具名</option>
                     <option value="小天使">小天使</option>
+ <option value="小99">小99</option>
                     <option value="思思">思思</option>
                     <option value="林小咪">林小咪</option>
                     <option value="Ss">Ss</option>
@@ -66,14 +69,13 @@
                     <option value="精靈">精靈</option>
                     <option value="モモンガ的奶奶阿噓">モモンガ的奶奶阿噓</option>
                     <option value="Sabrina">Sabrina</option>
-
                 </select>
             </div>
             <div class="form-group">
                 <label for="itemName">🎯 目標名稱</label>
                 <select id="itemName" required>
                     <option value="" disabled selected>請選擇目標 (必填)</option>
-                    <option value="巨菇">巨菇</option>
+ <option value="巨菇">巨菇</option>
                     <option value="大水">大水</option>
                     <option value="大火">大火</option>
                     <option value="大電">大電</option>
@@ -87,7 +89,7 @@
                     <option value="大白">大白</option>
                     <option value="大灰">大灰</option>
                     <option value="大冰藍">大冰藍</option>
-                    
+                   
                 </select>
             </div>
             <div class="form-group">
@@ -108,11 +110,68 @@
         // ==========================================
         // ⚠️ 請填入你的 Google Apps Script 部署網址
         // ==========================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw74I5WUjNcSrJ13bFEjeEb8bhm7iJFFdmJfPxnAfWmBoSv7YMSiQkqvg3fbMu4YIFq/exec";
+        const GAS_URL = "https://script.google.com/macros/s/你的金鑰/exec";
         // ==========================================
 
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
+
+        // 建立繁體中文國家名稱轉換器
+        const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
+
+        // 根據兩字元簡碼取得繁體中文國家名稱 (例如：TW -> 台灣)
+        function getCountryNameInChinese(countryCode) {
+            if (!countryCode) return '';
+            try {
+                return regionNamesInZh.of(countryCode.toUpperCase());
+            } catch (e) {
+                return countryCode; // 若轉換失敗則回傳原簡碼
+            }
+        }
+
+        // 將 ISO 國家代碼 (如 TW, JP, US) 轉為 Emoji 國旗符號
+        function getFlagEmoji(countryCode) {
+            if (!countryCode || countryCode.length !== 2) return "🌐";
+            const codePoints = countryCode
+                .toUpperCase()
+                .split('')
+                .map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+
+        // 解析座標字串
+        function parseLatLng(coordsStr) {
+            if (!coordsStr) return null;
+            const parts = coordsStr.split(',');
+            if (parts.length < 2) return null;
+            const lat = parseFloat(parts[0].trim());
+            const lng = parseFloat(parts[1].trim());
+            if (isNaN(lat) || isNaN(lng)) return null;
+            return { lat, lng };
+        }
+
+        // 根據座標查詢國家代碼與時區（使用 OpenStreetMap Nominatim 免費 API）
+        async function fetchLocationMeta(lat, lng) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3`);
+                const data = await response.json();
+                if (data && data.address && data.address.country_code) {
+                    const countryCode = data.address.country_code.toUpperCase();
+                    
+                    // 根據國家簡碼查詢標準時區 ID
+                    const tzResponse = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
+                    const tzData = await tzResponse.json();
+                    
+                    return {
+                        countryCode: countryCode,
+                        timeZone: tzData.timeZone || null
+                    };
+                }
+            } catch (err) {
+                console.warn("地點與時區查詢失敗，改用預設顯示", err);
+            }
+            return { countryCode: null, timeZone: null };
+        }
 
         function setStatus(text, type = 'syncing') {
             statusMsg.textContent = text;
@@ -131,8 +190,9 @@
             
             fetch(GAS_URL)
                 .then(response => response.json())
-                .then(data => {
+                .then(async data => {
                     localDataList = data;
+                    await enrichLocationData();
                     renderList();
                     if (!silent) setStatus("", "success");
                 })
@@ -140,6 +200,20 @@
                     setStatus("❌ 載入失敗，請確認網路連線", "error");
                     console.error("Fetch Error:", error);
                 });
+        }
+
+        // 幫資料列表補齊國家與當地時間資訊
+        async function enrichLocationData() {
+            for (let item of localDataList) {
+                if (!item.countryCode || !item.timeZone) {
+                    const latLng = parseLatLng(item.coords);
+                    if (latLng) {
+                        const meta = await fetchLocationMeta(latLng.lat, latLng.lng);
+                        item.countryCode = meta.countryCode;
+                        item.timeZone = meta.timeZone;
+                    }
+                }
+            }
         }
 
         function renderList() {
@@ -155,9 +229,12 @@
 
             displayList.forEach((item) => {
                 let displayTime = item.time;
+                let localTimeString = "";
+
                 try {
                     const dateObj = new Date(item.time);
                     if (!isNaN(dateObj)) {
+                        // 1. 發布時間 (台灣時間)
                         displayTime = dateObj.toLocaleString('zh-TW', {
                             timeZone: 'Asia/Taipei',
                             year: 'numeric',
@@ -167,26 +244,51 @@
                             minute: '2-digit',
                             hour12: false
                         });
+
+                        // 2. 當地時間 (根據座標解析出的時區轉換)
+                        if (item.timeZone) {
+                            const localFormatted = dateObj.toLocaleString('zh-TW', {
+                                timeZone: item.timeZone,
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            });
+                            localTimeString = `<p class="local-time">🕒 當地時間：${localFormatted} (${item.timeZone})</p>`;
+                        }
                     }
                 } catch (e) {}
+
+                const flagIcon = item.countryCode ? getFlagEmoji(item.countryCode) : '';
+                // 將簡碼轉為中文國家名稱
+                const countryNameZh = item.countryCode ? getCountryNameInChinese(item.countryCode) : '';
+                const countryTagHtml = item.countryCode 
+                    ? `<span class="country-tag">${flagIcon} ${countryNameZh}</span>` 
+                    : '';
 
                 const isClaimedBool = item.isClaimed === true || item.isClaimed === "true";
                 const cardClass = isClaimedBool ? 'card claimed' : 'card';
                 
                 const claimerHtml = isClaimedBool
-                    ? `<p class="claimer-text">🙋 領取者：${item.claimer}</p>` 
+                    ? `<p class="claimer-text">✅ 已被領取</p>` 
                     : '';
 
-                const actionBtnHtml = isClaimedBool
-                    ? `<button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>`
+                const claimBtnHtml = isClaimedBool
+                    ? '' 
                     : `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 登記領取</button>`;
+
+                const actionBtnHtml = `
+                    ${claimBtnHtml}
+                    <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
+                `;
 
                 const card = document.createElement('div');
                 card.className = cardClass;
                 card.innerHTML = `
                     <div class="card-info">
                         <p><strong>👤 發布者：</strong> ${item.publisher}</p>
-                        <h3>🍄 ${item.name}</h3>
+                        <h3>🍄 ${item.name} ${countryTagHtml}</h3>
                         <p>
                             <strong>📍 座標：</strong> 
                             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.coords)}" target="_blank">${item.coords}</a>
@@ -194,7 +296,8 @@
                         </p>
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
                         ${claimerHtml}
-                        <p class="time-stamp">發布時間：${displayTime}</p>
+                        <p class="time-stamp">發布時間：${displayTime} (台灣時間)</p>
+                        ${localTimeString}
                     </div>
                     <div class="card-actions">
                         ${actionBtnHtml}
@@ -222,19 +325,35 @@
             });
         }
 
-        document.getElementById('shareForm').addEventListener('submit', function(e) {
+        // 發布邏輯
+        document.getElementById('shareForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const tempId = 'temp_' + Date.now();
+            const coordsVal = document.getElementById('coords').value;
+            const latLng = parseLatLng(coordsVal);
+
+            let countryCode = null;
+            let timeZone = null;
+
+            if (latLng) {
+                setStatus("🔍 正在辨識國家與時區...", "syncing");
+                const meta = await fetchLocationMeta(latLng.lat, latLng.lng);
+                countryCode = meta.countryCode;
+                timeZone = meta.timeZone;
+            }
+
             const newItem = {
                 id: tempId,
                 publisher: document.getElementById('publisher').value,
                 name: document.getElementById('itemName').value,
-                coords: document.getElementById('coords').value,
+                coords: coordsVal,
                 note: document.getElementById('note').value,
                 time: new Date().toISOString(),
                 isClaimed: false,
-                claimer: ""
+                claimer: "",
+                countryCode: countryCode,
+                timeZone: timeZone
             };
 
             localDataList.push(newItem);
@@ -254,25 +373,24 @@
             syncToGAS(payload, "發布");
         });
 
+        // 直接領取（不彈窗，無領取者名單）
         window.claimItem = function(id) {
-            const claimerName = prompt("請輸入你的遊戲暱稱 (領取者)：");
-            if (claimerName && claimerName.trim() !== "") {
-                const target = localDataList.find(item => item.id === id);
-                if (target) {
-                    target.isClaimed = true;
-                    target.claimer = claimerName.trim();
-                    renderList();
+            const target = localDataList.find(item => item.id === id);
+            if (target) {
+                target.isClaimed = true;
+                target.claimer = "已領取";
+                renderList();
 
-                    const payload = {
-                        action: 'claim',
-                        id: id,
-                        claimer: claimerName.trim()
-                    };
-                    syncToGAS(payload, "領取");
-                }
+                const payload = {
+                    action: 'claim',
+                    id: id,
+                    claimer: "已領取"
+                };
+                syncToGAS(payload, "領取");
             }
         };
 
+        // 刪除邏輯
         window.deleteItem = function(id) {
             if (confirm('確定要將此座標從列表中完全刪除嗎？')) {
                 localDataList = localDataList.filter(item => item.id !== id);
@@ -286,6 +404,7 @@
             }
         };
 
+        // 複製座標
         window.copyCoords = function(coords) {
             navigator.clipboard.writeText(coords).then(() => {
                 alert('✅ 座標已複製：' + coords);
@@ -298,3 +417,5 @@
     </script>
 </body>
 </html>
+
+            
