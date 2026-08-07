@@ -139,16 +139,20 @@
             return String.fromCodePoint(...codePoints);
         }
 
-        // 解析座標字串
-        function parseLatLng(coordsStr) {
-            if (!coordsStr) return null;
-            const parts = coordsStr.split(',');
-            if (parts.length < 2) return null;
-            const lat = parseFloat(parts[0].trim());
-            const lng = parseFloat(parts[1].trim());
-            if (isNaN(lat) || isNaN(lng)) return null;
-            return { lat, lng };
-        }
+       // 解析座標字串
+function parseLatLng(coordsStr) {
+    if (!coordsStr) return null;
+    
+    // 加上 String() 強制轉為字串，避免傳入數字或其他格式導致 .split 當機
+    const safeStr = String(coordsStr); 
+    
+    const parts = safeStr.split(',');
+    if (parts.length < 2) return null;
+    const lat = parseFloat(parts[0].trim());
+    const lng = parseFloat(parts[1].trim());
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return { lat, lng };
+}
 
         // 根據座標查詢國家代碼與時區（使用 OpenStreetMap Nominatim 免費 API）
         async function fetchLocationMeta(lat, lng) {
