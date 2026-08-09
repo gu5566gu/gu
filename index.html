@@ -106,7 +106,97 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwz_Bu-d2Mg4vJ14iYMnreojZeygo8TPwuKxbZJBA2zl96ztQr-j_LTj91rnyUdQCvk/exec";
+        const GAS_URL = "function doGet(e) {
+  var data = getFlowerData();
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var payload = JSON.parse(e.postData.contents);
+    var action = payload.action;
+
+    // 🗑️ 刪除邏輯 (依 ID 搜尋對應資料列刪除)
+    if (action === 'delete') {
+      var idToDelete = payload.id;
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(idToDelete)) {
+          sheet.deleteRow(i + 1); // sheet 列號從 1 開始，標題為 1，第一筆資料為 2
+          return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "找不到該 ID" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ✍️ 領取邏輯
+    if (action === 'claim') {
+      var idToClaim = payload.id;
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(idToClaim)) {
+          sheet.getRange(i + 1, 7).setValue(true); // 第 7 欄設為已領取 (isClaimed)
+          sheet.getRange(i + 1, 8).setValue(payload.claimer || "已領取");
+          return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+    }
+
+    // ✍️ 新增資料邏輯 (預設 action 為 'add')
+    var id = payload.id || "id_" + new Date().getTime();
+    var timeStr = payload.time || new Date().toISOString();
+    var publisher = payload.publisher || '匿名回報人';
+    var name = payload.name || '未填寫';
+    var coords = payload.coords || '';
+    var note = payload.note || '';
+    var isClaimed = false;
+    var claimer = '';
+
+    // 寫入 Google 試算表欄位順序：
+    // [ID, 發布時間, 發布者, 目標名稱, 座標, 備註, 是否領取, 領取者]
+    sheet.appendRow([id, timeStr, publisher, name, "'" + coords, note, isClaimed, claimer]);
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", id: id }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 📖 讀取資料並轉換為前端相容格式
+function getFlowerData() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return [];
+
+  var displayData = sheet.getDataRange().getDisplayValues();
+  var rawData = sheet.getDataRange().getValues();
+  var result = [];
+
+  for (var i = 1; i < rawData.length; i++) {
+    var rawRow = rawData[i];
+    var displayRow = displayData[i];
+
+    result.push({
+      id: rawRow[0],
+      time: rawRow[1],
+      publisher: displayRow[2] || '匿名回報人',
+      name: displayRow[3] || '未填寫',
+      coords: displayRow[4] || '',
+      note: displayRow[5] || '',
+      isClaimed: rawRow[6] === true || rawRow[6] === 'true',
+      claimer: displayRow[7] || ''
+    });
+  }
+  return result;
+}";
 
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
