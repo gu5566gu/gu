@@ -220,50 +220,55 @@ function parseLatLng(coordsStr) {
             }
         }
 
-        function renderList() {
-            const container = document.getElementById('listContainer');
-            container.innerHTML = '';
-            
-            if (!localDataList || localDataList.length === 0) {
-                container.innerHTML = '<p class="empty-msg">目前沒有待認領的座標，快來分享第一個吧！</p>';
-                return;
+       function renderList() {
+    const container = document.getElementById('listContainer');
+    container.innerHTML = '';
+    
+    if (!localDataList || localDataList.length === 0) {
+        container.innerHTML = '<p class="empty-msg">目前沒有待認領的座標，快來分享第一個吧！</p>';
+        return;
+    }
+
+    const displayList = [...localDataList].reverse();
+
+    // 取得使用者瀏覽器「現在」的即時時間物件
+    const now = new Date();
+
+    displayList.forEach((item) => {
+        let displayTime = item.time;
+        let currentLocalTimeString = "";
+
+        try {
+            const dateObj = new Date(item.time);
+            if (!isNaN(dateObj)) {
+                // 1. 發布時間 (台灣時間)
+                displayTime = dateObj.toLocaleString('zh-TW', {
+                    timeZone: 'Asia/Taipei',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
+                // 2. 該座標「目前的最新當地時間」（基於 now 變數計算）
+                if (item.timeZone) {
+                    const currentLocalFormatted = now.toLocaleString('zh-TW', {
+                        timeZone: item.timeZone,
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    currentLocalTimeString = `<p class="local-time">🕒 座標目前當地時間：${currentLocalFormatted} (${item.timeZone})</p>`;
+                }
             }
-
-            const displayList = [...localDataList].reverse();
-
-            displayList.forEach((item) => {
-                let displayTime = item.time;
-                let localTimeString = "";
-
-                try {
-                    const dateObj = new Date(item.time);
-                    if (!isNaN(dateObj)) {
-                        // 1. 發布時間 (台灣時間)
-                        displayTime = dateObj.toLocaleString('zh-TW', {
-                            timeZone: 'Asia/Taipei',
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
-
-                        // 2. 當地時間 (根據座標解析出的時區轉換)
-                        if (item.timeZone) {
-                            const localFormatted = dateObj.toLocaleString('zh-TW', {
-                                timeZone: item.timeZone,
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false
-                            });
-                            localTimeString = `<p class="local-time">🕒 當地時間：${localFormatted} (${item.timeZone})</p>`;
-                        }
-                    }
-                } catch (e) {}
-
+        } catch (e) {
+            console.warn("時間計算或格式化失敗", e);
+        }
                 const flagIcon = item.countryCode ? getFlagEmoji(item.countryCode) : '';
                 // 將簡碼轉為中文國家名稱
                 const countryNameZh = item.countryCode ? getCountryNameInChinese(item.countryCode) : '';
