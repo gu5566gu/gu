@@ -105,10 +105,9 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz91TkwmcEseSKbyCewRu4BB2QAwIILG1EpqaOVTlwZj3sZtVcWcQM0W1y_Au6apE2m/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwhVTequ-0-ANIeISelaDJiinfxhVYUGDBc1p9l49sy376MvruhewbP7eU1uCJO8hu_/exec";
 
         let localDataList = [];
-        let clockTimer = null;
         const statusMsg = document.getElementById('statusMsg');
 
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -204,17 +203,18 @@
             }
         }
 
-        // 計算當地【目前即時時間】
-        function getLocalCurrentTimeFormatted(timeZone) {
+        // 格式化指定時間與時區 (月/日 時:分)
+        function formatZonedTime(dateInput, timeZone) {
             if (!timeZone) return '';
             try {
-                return new Date().toLocaleString('zh-TW', {
+                const d = new Date(dateInput);
+                if (isNaN(d.getTime())) return '';
+                return d.toLocaleString('zh-TW', {
                     timeZone: timeZone,
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit',
-                    second: '2-digit',
                     hour12: false
                 });
             } catch (e) {
@@ -232,6 +232,7 @@
             }
 
             const displayList = [...localDataList].reverse();
+            const now = new Date(); // 當前頁面載入/繪製時間
 
             displayList.forEach((item) => {
                 let displayTime = item.time;
@@ -273,10 +274,17 @@
                     <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
                 `;
 
-                // 當地「目前時間」顯示區塊
-                const initialLocalTime = getLocalCurrentTimeFormatted(item.timeZone);
-                const localTimeHtml = item.timeZone ? 
-                    `<p class="local-time">🕒 當地目前時間：<span class="live-clock" data-timezone="${item.timeZone}">${initialLocalTime}</span> (${item.timeZone})</p>` : '';
+                // 計算兩者當地時間：1. 發布時的當地時間 2. 座標地點現在的時間
+                let localTimeSection = '';
+                if (item.timeZone) {
+                    const publishedLocalTime = formatZonedTime(item.time, item.timeZone);
+                    const currentLocalTime = formatZonedTime(now, item.timeZone);
+
+                    localTimeSection = `
+                        <p class="local-time">📅 發布時座標時間：${publishedLocalTime} (${item.timeZone})</p>
+                        <p class="local-time">🕒 座標現在的時間：${currentLocalTime} (${item.timeZone})</p>
+                    `;
+                }
 
                 const card = document.createElement('div');
                 card.className = cardClass;
@@ -292,7 +300,7 @@
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
                         ${claimerHtml}
                         <p class="time-stamp">發布時間：${displayTime} (台灣時間)</p>
-                        ${localTimeHtml}
+                        ${localTimeSection}
                     </div>
                     <div class="card-actions">
                         ${actionBtnHtml}
@@ -300,23 +308,6 @@
                 `;
                 container.appendChild(card);
             });
-
-            // 啟動即時更新鐘面
-            startLiveClocks();
-        }
-
-        // 每秒更新一次所有卡片上的「當地目前時間」
-        function startLiveClocks() {
-            if (clockTimer) clearInterval(clockTimer);
-            clockTimer = setInterval(() => {
-                const clockElements = document.querySelectorAll('.live-clock');
-                clockElements.forEach(el => {
-                    const tz = el.getAttribute('data-timezone');
-                    if (tz) {
-                        el.textContent = getLocalCurrentTimeFormatted(tz);
-                    }
-                });
-            }, 1000);
         }
 
         function syncToGAS(payload, actionName) {
@@ -380,7 +371,7 @@
                 coords: newItem.coords,
                 note: newItem.note,
                 time: newItem.time,
-                timeZone: newItem.timeZone // 帶回時區供試算表儲存
+                timeZone: newItem.timeZone
             };
             syncToGAS(payload, "發布");
         });
