@@ -7,6 +7,60 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #2c3e50; }
+        
+        /* 快捷連結 CSS 樣式 */
+        .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .link-btn-group {
+            display: flex;
+            background: #fff;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        .link-btn-group:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .link-btn-main {
+            flex-grow: 1;
+            padding: 12px 15px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            background: #fff;
+            transition: background 0.2s;
+        }
+        .link-btn-main:hover {
+            background: #f8f9fa;
+            color: #3498db;
+        }
+        .link-btn-copy {
+            background: #f1f2f6;
+            border: none;
+            border-left: 1px solid #dcdfe6;
+            padding: 0 12px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.2s;
+        }
+        .link-btn-copy:hover {
+            background: #dfe4ea;
+        }
+        @media (max-width: 500px) {
+            .quick-links-grid {
+                grid-template-columns: 1fr; /* 手機版改為單欄 */
+            }
+        }
+
         .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
@@ -48,8 +102,41 @@
 </head>
 <body>
 
+    <!-- 標題區塊 -->
+    <header style="text-align: center; margin-bottom: 20px;">
+        <h1 style="margin-bottom: 8px;">📍 菇菇分享</h1>
+        <p style="color: #7f8c8d; font-size: 0.95em; margin: 0;">即時分享與領取地圖座標資訊</p>
+    </header>
 
     <div id="statusMsg"></div>
+
+    <!-- ⚡ 精簡型快捷連結 (包含新增的菇點分享) -->
+    <div class="quick-links-grid">
+      <div class="link-btn-group">
+        <a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮pikoohiong</a>
+        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')" title="複製連結">📋</button>
+      </div>
+
+      <div class="link-btn-group">
+        <a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮pickmin</a>
+        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')" title="複製連結">📋</button>
+      </div>
+
+      <div class="link-btn-group">
+        <a class="link-btn-main" href="https://gu5566gu.github.io/5566/" target="_blank">🌸 花田分享</a>
+        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')" title="複製連結">📋</button>
+      </div>
+
+       <div class="link-btn-group">
+        <a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸LOC花田</a>
+        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')" title="複製連結">📋</button>
+      </div>
+
+      <div class="link-btn-group">
+        <a class="link-btn-main" href="https://gu5566gu.github.io/gu/" target="_blank">🍄 菇點分享</a>
+        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')" title="複製連結">📋</button>
+      </div>
+    </div>
 
     <div class="form-container">
         <form id="shareForm">
@@ -202,7 +289,6 @@
             }
         }
 
-        // 格式化指定時間與時區 (月/日 時:分)
         function formatZonedTime(dateInput, timeZone) {
             if (!timeZone) return '';
             try {
@@ -231,7 +317,7 @@
             }
 
             const displayList = [...localDataList].reverse();
-            const now = new Date(); // 當前頁面載入/繪製時間
+            const now = new Date();
 
             displayList.forEach((item) => {
                 let displayTime = item.time;
@@ -273,7 +359,6 @@
                     <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
                 `;
 
-                // 計算兩者當地時間：1. 發布時的當地時間 2. 座標地點現在的時間
                 let localTimeSection = '';
                 if (item.timeZone) {
                     const publishedLocalTime = formatZonedTime(item.time, item.timeZone);
@@ -407,6 +492,15 @@
         window.copyCoords = function(coords) {
             navigator.clipboard.writeText(coords).then(() => {
                 alert('✅ 座標已複製：' + coords);
+            }).catch(err => {
+                alert('❌ 複製失敗，請手動複製');
+            });
+        };
+
+        // 快捷連結複製功能
+        window.copyLink = function(name, url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert(`✅【${name}】連結已複製！`);
             }).catch(err => {
                 alert('❌ 複製失敗，請手動複製');
             });
