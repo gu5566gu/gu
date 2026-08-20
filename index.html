@@ -1,35 +1,34 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
+<!DOCTYPE html><html lang="zh-TW"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📍 菇菇分享</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #2c3e50; }
         
-        /* 快捷連結 CSS 樣式 */
+        /* ⚡ 加大複製按鈕的快捷連結 CSS */
         .quick-links-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 25px;
         }
         .link-btn-group {
             display: flex;
             background: #fff;
             border: 1px solid #dcdfe6;
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: all 0.2s;
         }
         .link-btn-group:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: #bdc3c7;
         }
         .link-btn-main {
             flex-grow: 1;
-            padding: 12px 15px;
+            padding: 12px 14px;
             color: #2c3e50;
             text-decoration: none;
             font-weight: 600;
@@ -43,22 +42,26 @@
             background: #f8f9fa;
             color: #3498db;
         }
+        /* 加大複製按鈕尺寸與觸控範圍 */
         .link-btn-copy {
             background: #f1f2f6;
             border: none;
             border-left: 1px solid #dcdfe6;
-            padding: 0 12px;
+            padding: 0 16px;
             cursor: pointer;
-            font-size: 1em;
-            transition: background 0.2s;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #57606f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s;
+            user-select: none;
         }
         .link-btn-copy:hover {
-            background: #dfe4ea;
-        }
-        @media (max-width: 500px) {
-            .quick-links-grid {
-                grid-template-columns: 1fr; /* 手機版改為單欄 */
-            }
+            background: #3498db;
+            color: #ffffff;
         }
 
         .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
@@ -97,10 +100,9 @@
             .card { flex-direction: column; align-items: flex-start; }
             .card-actions { margin-left: 0; margin-top: 15px; width: 100%; flex-direction: row; }
             button.claim-btn, button.delete-btn { flex: 1; width: auto; }
+            .quick-links-grid { grid-template-columns: 1fr; }
         }
-    </style>
-</head>
-<body>
+    </style></head><body>
 
     <!-- 標題區塊 -->
     <header style="text-align: center; margin-bottom: 20px;">
@@ -110,31 +112,31 @@
 
     <div id="statusMsg"></div>
 
-    <!-- ⚡ 精簡型快捷連結 (包含新增的菇點分享) -->
+    <!-- 加大複製按鈕的快捷連結區塊 -->
     <div class="quick-links-grid">
       <div class="link-btn-group">
-        <a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮pikoohiong</a>
-        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')" title="複製連結">📋</button>
+        <a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮 pikoohiong</a>
+        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')">📋 複製</button>
       </div>
 
       <div class="link-btn-group">
-        <a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮pickmin</a>
-        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')" title="複製連結">📋</button>
+        <a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮 pickmin</a>
+        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')">📋 複製</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://gu5566gu.github.io/5566/" target="_blank">🌸 花田分享</a>
-        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')" title="複製連結">📋</button>
+        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')">📋 複製</button>
       </div>
 
        <div class="link-btn-group">
-        <a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸LOC花田</a>
-        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')" title="複製連結">📋</button>
+        <a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸 LOC花田</a>
+        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')">📋 複製</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://gu5566gu.github.io/gu/" target="_blank">🍄 菇點分享</a>
-        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')" title="複製連結">📋</button>
+        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')">📋 複製</button>
       </div>
     </div>
 
@@ -497,7 +499,6 @@
             });
         };
 
-        // 快捷連結複製功能
         window.copyLink = function(name, url) {
             navigator.clipboard.writeText(url).then(() => {
                 alert(`✅【${name}】連結已複製！`);
@@ -507,6 +508,4 @@
         };
 
         fetchData();
-    </script>
-</body>
-</html>
+    </script></body></html>
