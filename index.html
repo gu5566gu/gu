@@ -3,65 +3,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📍 菇菇分享</title>
     <style>
-        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { text-align: center; color: #2c3e50; }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 15px; }
+        h1 { text-align: center; color: #2c3e50; margin: 10px 0 5px 0; font-size: 1.5em; }
         
-        /* ⚡ 加大複製按鈕的快捷連結 CSS */
+        /* ⚡ 迷你緊湊型快捷連結 CSS (尺寸縮減一半) */
         .quick-links-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 15px;
         }
         .link-btn-group {
             display: flex;
             background: #fff;
-            border: 1px solid #dcdfe6;
-            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             transition: all 0.2s;
         }
         .link-btn-group:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-color: #bdc3c7;
+            border-color: #3498db;
         }
         .link-btn-main {
             flex-grow: 1;
-            padding: 12px 14px;
+            padding: 6px 8px;
             color: #2c3e50;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95em;
+            font-size: 0.82em;
             display: flex;
             align-items: center;
             background: #fff;
-            transition: background 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .link-btn-main:hover {
             background: #f8f9fa;
             color: #3498db;
         }
-        /* 加大複製按鈕尺寸與觸控範圍 */
         .link-btn-copy {
-            background: #f1f2f6;
+            background: #f8f9fa;
             border: none;
-            border-left: 1px solid #dcdfe6;
-            padding: 0 16px;
+            border-left: 1px solid #eee;
+            padding: 0 8px;
             cursor: pointer;
-            font-size: 0.85em;
-            font-weight: bold;
-            color: #57606f;
+            font-size: 0.75em;
+            color: #7f8c8d;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
             transition: all 0.2s;
-            user-select: none;
         }
         .link-btn-copy:hover {
             background: #3498db;
-            color: #ffffff;
+            color: #fff;
         }
 
         .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
@@ -91,57 +88,57 @@
         button.delete-btn:hover { background-color: #c0392b; }
         .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
         
-        #statusMsg { text-align: center; font-weight: bold; margin-bottom: 15px; min-height: 24px; transition: all 0.3s; }
+        #statusMsg { text-align: center; font-weight: bold; margin-bottom: 10px; min-height: 20px; font-size: 0.9em; transition: all 0.3s; }
         .status-syncing { color: #e67e22; }
         .status-success { color: #27ae60; }
         .status-error { color: #e74c3c; }
 
         @media (max-width: 600px) {
+            .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
             .card { flex-direction: column; align-items: flex-start; }
             .card-actions { margin-left: 0; margin-top: 15px; width: 100%; flex-direction: row; }
             button.claim-btn, button.delete-btn { flex: 1; width: auto; }
-            .quick-links-grid { grid-template-columns: 1fr; }
         }
     </style></head><body>
 
     <!-- 標題區塊 -->
-    <header style="text-align: center; margin-bottom: 20px;">
-        <h1 style="margin-bottom: 8px;">📍 菇菇分享</h1>
-        <p style="color: #7f8c8d; font-size: 0.95em; margin: 0;">即時分享與領取地圖座標資訊</p>
+    <header style="text-align: center; margin-bottom: 12px;">
+        <h1>📍 菇菇分享</h1>
+        <p style="color: #7f8c8d; font-size: 0.85em; margin: 0;">即時分享與領取地圖座標資訊</p>
     </header>
 
     <div id="statusMsg"></div>
 
-    <!-- 加大複製按鈕的快捷連結區塊 -->
+    <!-- 超緊湊微型快捷連結區塊 -->
     <div class="quick-links-grid">
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮 pikoohiong</a>
-        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')" title="複製連結">📋</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮 pickmin</a>
-        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')" title="複製連結">📋</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://gu5566gu.github.io/5566/" target="_blank">🌸 花田分享</a>
-        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')" title="複製連結">📋</button>
       </div>
 
-       <div class="link-btn-group">
+      <div class="link-btn-group">
         <a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸 LOC花田</a>
-        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')" title="複製連結">📋</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://pkm-gpx-wind.pages.dev/" target="_blank">🌬️ 暖風</a>
-        <button class="link-btn-copy" onclick="copyLink('暖風', 'https://pkm-gpx-wind.pages.dev/')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('暖風', 'https://pkm-gpx-wind.pages.dev/')" title="複製連結">📋</button>
       </div>
 
       <div class="link-btn-group">
         <a class="link-btn-main" href="https://gu5566gu.github.io/gu/" target="_blank">🍄 菇點分享</a>
-        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')">📋 複製</button>
+        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')" title="複製連結">📋</button>
       </div>
     </div>
 
