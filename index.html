@@ -1,145 +1,81 @@
-<!DOCTYPE html><html lang="zh-TW"><head>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📍 菇菇分享</title>
     <style>
-        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: 0 auto; padding: 15px; }
-        h1 { text-align: center; color: #2c3e50; margin: 10px 0 5px 0; font-size: 1.5em; }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background-color: #f4f7f6; color: #333; max-width: 600px; margin: 0 auto; padding: 12px; }
+        header { text-align: center; margin-bottom: 12px; }
+        h1 { margin: 5px 0; font-size: 1.4em; color: #2c3e50; }
         
-        /* ⚡ 迷你緊湊型快捷連結 CSS (尺寸縮減一半) */
-        .quick-links-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 15px;
-        }
-        .link-btn-group {
-            display: flex;
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-            transition: all 0.2s;
-        }
-        .link-btn-group:hover {
-            border-color: #3498db;
-        }
-        .link-btn-main {
-            flex-grow: 1;
-            padding: 6px 8px;
-            color: #2c3e50;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.82em;
-            display: flex;
-            align-items: center;
-            background: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .link-btn-main:hover {
-            background: #f8f9fa;
-            color: #3498db;
-        }
-        .link-btn-copy {
-            background: #f8f9fa;
-            border: none;
-            border-left: 1px solid #eee;
-            padding: 0 8px;
-            cursor: pointer;
-            font-size: 0.75em;
-            color: #7f8c8d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        .link-btn-copy:hover {
-            background: #3498db;
-            color: #fff;
-        }
+        .quick-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px; }
+        .link-btn-group { display: flex; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .link-btn-main { flex-grow: 1; padding: 6px 8px; color: #2c3e50; text-decoration: none; font-weight: 600; font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .link-btn-copy { background: #f8f9fa; border: none; border-left: 1px solid #eee; padding: 0 8px; cursor: pointer; font-size: 0.75em; color: #7f8c8d; }
 
-        .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        button.submit-btn { background-color: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
-        button.submit-btn:hover { background-color: #2980b9; }
-        .card { background: #fff; padding: 15px 20px; border-radius: 8px; border-left: 5px solid #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
-        .card.claimed { border-left: 5px solid #95a5a6; background: #fdfdfd; opacity: 0.85; }
-        .card-info { flex-grow: 1; }
-        .card-info h3 { margin: 0 0 10px 0; color: #2c3e50; }
-        .card-info p { margin: 5px 0; line-height: 1.4; }
-        .card-info a { color: #3498db; text-decoration: none; font-weight: bold; }
-        .card-info a:hover { text-decoration: underline; }
-        .time-stamp { font-size: 0.85em; color: #7f8c8d; margin-top: 8px !important; }
-        .local-time { font-size: 0.85em; color: #d35400; font-weight: 600; margin-top: 2px !important; }
-        .claimer-text { color: #27ae60; font-weight: bold; background: #e8f8f5; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 5px !important; }
-        .country-tag { background: #eef2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; margin-left: 5px; border: 1px solid #dcdfe6; }
-        button.copy-btn { background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-left: 8px; color: #2c3e50; }
-        button.copy-btn:hover { background-color: #e0e0e0; }
-        .card-actions { display: flex; flex-direction: column; gap: 10px; margin-left: 15px; }
-        button.claim-btn, button.delete-btn { color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; width: 120px; }
-        button.claim-btn { background-color: #2ecc71; }
-        button.claim-btn:hover { background-color: #27ae60; }
-        button.delete-btn { background-color: #e74c3c; }
-        button.delete-btn:hover { background-color: #c0392b; }
-        .empty-msg { text-align: center; color: #95a5a6; font-style: italic; padding: 20px; }
+        .form-container { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button.submit-btn { background-color: #3498db; color: white; border: none; padding: 10px; font-size: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+
+        /* 批量操作工具列 */
+        .batch-toolbar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e0e0e0; font-size: 0.9em; }
+        .batch-toolbar label { cursor: pointer; font-weight: bold; }
+        button.batch-delete-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
+        button.batch-delete-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* 緊湊型資訊卡片 */
+        .card { background: #fff; padding: 12px; border-radius: 8px; border-left: 4px solid #e74c3c; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+        .card.claimed { border-left: 4px solid #95a5a6; background: #fcfcfc; opacity: 0.85; }
+        .card-checkbox { margin-top: 4px; transform: scale(1.2); cursor: pointer; }
+        .card-info { flex-grow: 1; font-size: 0.9em; }
+        .card-info h3 { margin: 0 0 6px 0; color: #2c3e50; font-size: 1.05em; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .card-info p { margin: 3px 0; line-height: 1.3; color: #444; }
+        .card-info a { color: #3498db; text-decoration: none; font-weight: bold; word-break: break-all; }
         
-        #statusMsg { text-align: center; font-weight: bold; margin-bottom: 10px; min-height: 20px; font-size: 0.9em; transition: all 0.3s; }
+        /* Inline 複製成功提示 */
+        .copy-wrapper { display: inline-flex; align-items: center; gap: 5px; }
+        button.copy-btn { background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.8em; color: #2c3e50; }
+        .copy-toast { font-size: 0.75em; color: #27ae60; font-weight: bold; display: none; }
+
+        .time-stamp { font-size: 0.8em; color: #7f8c8d; margin-top: 6px !important; }
+        .local-time { font-size: 0.8em; color: #d35400; font-weight: 600; margin-top: 2px !important; }
+        .claimer-text { color: #27ae60; font-weight: bold; background: #e8f8f5; display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-top: 4px !important; }
+        .country-tag { background: #eef2f5; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; border: 1px solid #dcdfe6; font-weight: normal; }
+        
+        .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+        button.claim-btn, button.delete-btn { color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
+        button.claim-btn { background-color: #2ecc71; }
+        button.delete-btn { background-color: #e74c3c; }
+
+        #statusMsg { text-align: center; font-weight: bold; margin-bottom: 8px; min-height: 18px; font-size: 0.85em; }
         .status-syncing { color: #e67e22; }
         .status-success { color: #27ae60; }
         .status-error { color: #e74c3c; }
 
-        @media (max-width: 600px) {
+        @media (max-width: 480px) {
             .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
-            .card { flex-direction: column; align-items: flex-start; }
-            .card-actions { margin-left: 0; margin-top: 15px; width: 100%; flex-direction: row; }
-            button.claim-btn, button.delete-btn { flex: 1; width: auto; }
         }
-    </style></head><body>
+    </style>
+</head>
+<body>
 
-    <!-- 標題區塊 -->
-    <header style="text-align: center; margin-bottom: 12px;">
+    <header>
         <h1>📍 菇菇分享</h1>
-        <p style="color: #7f8c8d; font-size: 0.85em; margin: 0;">即時分享與領取地圖座標資訊</p>
+        <p style="color: #7f8c8d; font-size: 0.8em; margin: 0;">即時分享與領取地圖座標資訊</p>
     </header>
 
     <div id="statusMsg"></div>
 
-    <!-- 超緊湊微型快捷連結區塊 -->
     <div class="quick-links-grid">
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮 pikoohiong</a>
-        <button class="link-btn-copy" onclick="copyLink('pikoohiong', 'https://pikoohiong.com/zh-TW')" title="複製連結">📋</button>
-      </div>
-
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮 pickmin</a>
-        <button class="link-btn-copy" onclick="copyLink('pickmin', 'https://pickmin-postcards.vercel.app/')" title="複製連結">📋</button>
-      </div>
-
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://gu5566gu.github.io/5566/" target="_blank">🌸 花田分享</a>
-        <button class="link-btn-copy" onclick="copyLink('花田分享', 'https://gu5566gu.github.io/5566/')" title="複製連結">📋</button>
-      </div>
-
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸 LOC花田</a>
-        <button class="link-btn-copy" onclick="copyLink('LOC', 'https://locwarp-wish.pages.dev/')" title="複製連結">📋</button>
-      </div>
-
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://pkm-gpx-wind.pages.dev/" target="_blank">🌬️ 暖風</a>
-        <button class="link-btn-copy" onclick="copyLink('暖風', 'https://pkm-gpx-wind.pages.dev/')" title="複製連結">📋</button>
-      </div>
-
-      <div class="link-btn-group">
-        <a class="link-btn-main" href="https://gu5566gu.github.io/gu/" target="_blank">🍄 菇點分享</a>
-        <button class="link-btn-copy" onclick="copyLink('菇點分享', 'https://gu5566gu.github.io/gu/')" title="複製連結">📋</button>
-      </div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://pikoohiong.com/zh-TW" target="_blank">📮 pikoohiong</a></div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://pickmin-postcards.vercel.app/" target="_blank">📮 pickmin</a></div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://gu5566gu.github.io/5566/" target="_blank">🌸 花田分享</a></div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://locwarp-wish.pages.dev/" target="_blank">🌸 LOC花田</a></div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://pkm-gpx-wind.pages.dev/" target="_blank">🌬️ 暖風</a></div>
+      <div class="link-btn-group"><a class="link-btn-main" href="https://gu5566gu.github.io/gu/" target="_blank">🍄 菇點分享</a></div>
     </div>
 
     <div class="form-container">
@@ -185,69 +121,56 @@
                 <input type="text" id="coords" placeholder="例如：25.0339, 121.5645" required>
             </div>
             <div class="form-group">
-                <label for="note" >📝 備註說明 (選填)</label>
+                <label for="note">📝 備註說明 (選填)</label>
                 <input type="text" id="note" value="未開" placeholder="例如：剩餘時間 2小時 / 缺戰力">
             </div>
             <button type="submit" class="submit-btn" id="submitBtn">發布座標</button>
         </form>
     </div>
 
+    <!-- 批量刪除工具列 -->
+    <div class="batch-toolbar">
+        <label><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"> 全選</label>
+        <button class="batch-delete-btn" id="batchDeleteBtn" onclick="deleteSelectedItems()" disabled>🗑️ 刪除選取項目 (0)</button>
+    </div>
+
     <div id="listContainer"></div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwhVTequ-0-ANIeISelaDJiinfxhVYUGDBc1p9l49sy376MvruhewbP7eU1uCJO8hu_/exec";
-
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
-
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
 
-        function getCountryNameInChinese(countryCode) {
-            if (!countryCode) return '';
-            try {
-                return regionNamesInZh.of(countryCode.toUpperCase());
-            } catch (e) {
-                return countryCode;
-            }
+        function getCountryNameInChinese(code) {
+            if (!code) return '';
+            try { return regionNamesInZh.of(code.toUpperCase()); } catch (e) { return code; }
         }
 
-        function getFlagEmoji(countryCode) {
-            if (!countryCode || countryCode.length !== 2) return "🌐";
-            const codePoints = countryCode
-                .toUpperCase()
-                .split('')
-                .map(char => 127397 + char.charCodeAt());
-            return String.fromCodePoint(...codePoints);
+        function getFlagEmoji(code) {
+            if (!code || code.length !== 2) return "🌐";
+            return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
         }
 
         function parseLatLng(coordsStr) {
             if (!coordsStr) return null;
-            const safeStr = String(coordsStr); 
-            const parts = safeStr.split(',');
+            const parts = String(coordsStr).split(',');
             if (parts.length < 2) return null;
-            const lat = parseFloat(parts[0].trim());
-            const lng = parseFloat(parts[1].trim());
-            if (isNaN(lat) || isNaN(lng)) return null;
-            return { lat, lng };
+            const lat = parseFloat(parts[0].trim()), lng = parseFloat(parts[1].trim());
+            return (isNaN(lat) || isNaN(lng)) ? null : { lat, lng };
         }
 
         async function fetchLocationMeta(lat, lng) {
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3`);
-                const data = await response.json();
-                if (data && data.address && data.address.country_code) {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3`);
+                const data = await res.json();
+                if (data?.address?.country_code) {
                     const countryCode = data.address.country_code.toUpperCase();
-                    const tzResponse = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
-                    const tzData = await tzResponse.json();
-                    
-                    return {
-                        countryCode: countryCode,
-                        timeZone: tzData.timeZone || null
-                    };
+                    const tzRes = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
+                    const tzData = await tzRes.json();
+                    return { countryCode, timeZone: tzData.timeZone || null };
                 }
-            } catch (err) {
-                console.warn("地點與時區查詢失敗，改用預設顯示", err);
-            }
+            } catch (err) {}
             return { countryCode: null, timeZone: null };
         }
 
@@ -255,29 +178,21 @@
             statusMsg.textContent = text;
             statusMsg.className = 'status-' + type;
             if (type === 'success') {
-                setTimeout(() => {
-                    if (statusMsg.className === 'status-success') {
-                        statusMsg.textContent = '';
-                    }
-                }, 3000);
+                setTimeout(() => { if (statusMsg.className === 'status-success') statusMsg.textContent = ''; }, 3000);
             }
         }
 
         function fetchData(silent = false) {
             if (!silent) setStatus("🔄 正在載入最新資料...", "syncing");
-            
             fetch(GAS_URL)
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(async data => {
                     localDataList = data;
                     await enrichLocationData();
                     renderList();
                     if (!silent) setStatus("", "success");
                 })
-                .catch(error => {
-                    setStatus("❌ 載入失敗，請確認網路連線", "error");
-                    console.error("Fetch Error:", error);
-                });
+                .catch(error => setStatus("❌ 載入失敗，請確認網路連線", "error"));
         }
 
         async function enrichLocationData() {
@@ -297,18 +212,8 @@
             if (!timeZone) return '';
             try {
                 const d = new Date(dateInput);
-                if (isNaN(d.getTime())) return '';
-                return d.toLocaleString('zh-TW', {
-                    timeZone: timeZone,
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-            } catch (e) {
-                return '';
-            }
+                return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-TW', { timeZone, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+            } catch (e) { return ''; }
         }
 
         function renderList() {
@@ -316,7 +221,8 @@
             container.innerHTML = '';
             
             if (!localDataList || localDataList.length === 0) {
-                container.innerHTML = '<p class="empty-msg">目前沒有待認領的座標，快來分享第一個吧！</p>';
+                container.innerHTML = '<p style="text-align:center; color:#95a5a6; font-style:italic;">目前沒有座標資料</p>';
+                updateBatchButton();
                 return;
             }
 
@@ -325,112 +231,123 @@
 
             displayList.forEach((item) => {
                 let displayTime = item.time;
-
                 try {
                     const dateObj = new Date(item.time);
                     if (!isNaN(dateObj)) {
-                        displayTime = dateObj.toLocaleString('zh-TW', {
-                            timeZone: 'Asia/Taipei',
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
+                        displayTime = dateObj.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
                     }
                 } catch (e) {}
 
                 const flagIcon = item.countryCode ? getFlagEmoji(item.countryCode) : '';
                 const countryNameZh = item.countryCode ? getCountryNameInChinese(item.countryCode) : '';
-                const countryTagHtml = item.countryCode 
-                    ? `<span class="country-tag">${flagIcon} ${countryNameZh}</span>` 
-                    : '';
-
+                const countryTagHtml = item.countryCode ? `<span class="country-tag">${flagIcon} ${countryNameZh}</span>` : '';
                 const isClaimedBool = item.isClaimed === true || item.isClaimed === "true";
-                const cardClass = isClaimedBool ? 'card claimed' : 'card';
-                
-                const claimerHtml = isClaimedBool
-                    ? `<p class="claimer-text">✅ 已被領取</p>` 
-                    : '';
-
-                const claimBtnHtml = isClaimedBool
-                    ? '' 
-                    : `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 登記領取</button>`;
-
-                const actionBtnHtml = `
-                    ${claimBtnHtml}
-                    <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
-                `;
 
                 let localTimeSection = '';
                 if (item.timeZone) {
                     const publishedLocalTime = formatZonedTime(item.time, item.timeZone);
                     const currentLocalTime = formatZonedTime(now, item.timeZone);
-
                     localTimeSection = `
-                        <p class="local-time">📅 發布時座標時間：${publishedLocalTime} (${item.timeZone})</p>
-                        <p class="local-time">🕒 座標現在的時間：${currentLocalTime} (${item.timeZone})</p>
+                        <p class="local-time">📅 發布時區時間：${publishedLocalTime}</p>
+                        <p class="local-time">🕒 座標現在時間：${currentLocalTime}</p>
                     `;
                 }
 
                 const card = document.createElement('div');
-                card.className = cardClass;
+                card.className = isClaimedBool ? 'card claimed' : 'card';
                 card.innerHTML = `
+                    <input type="checkbox" class="card-checkbox item-checkbox" value="${item.id}" onchange="updateBatchButton()">
                     <div class="card-info">
-                        <p><strong>👤 發布者：</strong> ${item.publisher}</p>
                         <h3>🍄 ${item.name} ${countryTagHtml}</h3>
+                        <p><strong>👤 發布者：</strong> ${item.publisher}</p>
                         <p>
                             <strong>📍 座標：</strong> 
                             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.coords)}" target="_blank">${item.coords}</a>
-                            <button class="copy-btn" onclick="copyCoords('${item.coords}')">📋 複製</button>
+                            <span class="copy-wrapper">
+                                <button class="copy-btn" onclick="copyCoords('${item.coords}', this)">📋 複製</button>
+                                <span class="copy-toast">已複製！</span>
+                            </span>
                         </p>
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
-                        ${claimerHtml}
+                        ${isClaimedBool ? `<p class="claimer-text">✅ 已領取</p>` : ''}
                         <p class="time-stamp">發布時間：${displayTime} (台灣時間)</p>
                         ${localTimeSection}
-                    </div>
-                    <div class="card-actions">
-                        ${actionBtnHtml}
+                        <div class="card-actions">
+                            ${!isClaimedBool ? `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 領取</button>` : ''}
+                            <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
+
+            updateBatchButton();
         }
+
+        // 無彈窗複製座標
+        window.copyCoords = function(coords, btnElement) {
+            navigator.clipboard.writeText(coords).then(() => {
+                const toast = btnElement.nextElementSibling;
+                toast.style.display = 'inline';
+                setTimeout(() => { toast.style.display = 'none'; }, 2000);
+            });
+        };
+
+        // 多選與批量操作邏輯
+        window.toggleSelectAll = function(master) {
+            document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = master.checked);
+            updateBatchButton();
+        };
+
+        window.updateBatchButton = function() {
+            const selected = document.querySelectorAll('.item-checkbox:checked');
+            const btn = document.getElementById('batchDeleteBtn');
+            btn.textContent = `🗑️ 刪除選取項目 (${selected.length})`;
+            btn.disabled = selected.length === 0;
+            
+            const allCheckboxes = document.querySelectorAll('.item-checkbox');
+            const selectAllCb = document.getElementById('selectAll');
+            if (allCheckboxes.length > 0 && selected.length === allCheckboxes.length) {
+                selectAllCb.checked = true;
+            } else {
+                selectAllCb.checked = false;
+            }
+        };
+
+        window.deleteSelectedItems = function() {
+            const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return;
+
+            if (confirm(`確定要一次刪除這 ${selectedIds.length} 筆座標嗎？`)) {
+                localDataList = localDataList.filter(item => !selectedIds.includes(item.id));
+                renderList();
+
+                syncToGAS({ action: 'batchDelete', ids: selectedIds }, "批量刪除");
+            }
+        };
 
         function syncToGAS(payload, actionName) {
             setStatus(`⏳ 背景同步中 (${actionName})...`, "syncing");
-
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(result => {
-                setStatus(`✅ ${actionName}成功！`, "success");
-            })
-            .catch(error => {
-                setStatus(`⚠️ 背景同步異常，正重新校對雲端資料...`, "error");
-                console.error("Sync Error:", error);
-                fetchData(true);
-            });
+            fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) })
+                .then(res => res.json())
+                .then(result => setStatus(`✅ ${actionName}成功！`, "success"))
+                .catch(error => {
+                    setStatus(`⚠️ 同步異常，重新整理中...`, "error");
+                    fetchData(true);
+                });
         }
 
         document.getElementById('shareForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const tempId = 'temp_' + Date.now();
             const coordsVal = document.getElementById('coords').value;
             const latLng = parseLatLng(coordsVal);
 
-            let countryCode = null;
-            let timeZone = null;
-
+            let countryCode = null, timeZone = null;
             if (latLng) {
                 setStatus("🔍 正在辨識國家與時區...", "syncing");
                 const meta = await fetchLocationMeta(latLng.lat, latLng.lng);
-                countryCode = meta.countryCode;
-                timeZone = meta.timeZone;
+                countryCode = meta.countryCode; timeZone = meta.timeZone;
             }
 
             const newItem = {
@@ -440,10 +357,8 @@
                 coords: coordsVal,
                 note: document.getElementById('note').value,
                 time: new Date().toISOString(),
-                isClaimed: false,
-                claimer: "",
-                countryCode: countryCode,
-                timeZone: timeZone
+                isClaimed: false, claimer: "",
+                countryCode, timeZone
             };
 
             localDataList.push(newItem);
@@ -452,7 +367,7 @@
             document.getElementById('coords').value = '';
             document.getElementById('note').value = '';
 
-            const payload = {
+            syncToGAS({
                 action: 'add',
                 publisher: newItem.publisher,
                 name: newItem.name,
@@ -460,54 +375,27 @@
                 note: newItem.note,
                 time: newItem.time,
                 timeZone: newItem.timeZone
-            };
-            syncToGAS(payload, "發布");
+            }, "發布");
         });
 
         window.claimItem = function(id) {
             const target = localDataList.find(item => item.id === id);
             if (target) {
-                target.isClaimed = true;
-                target.claimer = "已領取";
+                target.isClaimed = true; target.claimer = "已領取";
                 renderList();
-
-                const payload = {
-                    action: 'claim',
-                    id: id,
-                    claimer: "已領取"
-                };
-                syncToGAS(payload, "領取");
+                syncToGAS({ action: 'claim', id, claimer: "已領取" }, "領取");
             }
         };
 
         window.deleteItem = function(id) {
-            if (confirm('確定要將此座標從列表中完全刪除嗎？')) {
+            if (confirm('確定要刪除此座標嗎？')) {
                 localDataList = localDataList.filter(item => item.id !== id);
                 renderList();
-
-                const payload = {
-                    action: 'delete',
-                    id: id
-                };
-                syncToGAS(payload, "刪除");
+                syncToGAS({ action: 'delete', id }, "刪除");
             }
         };
 
-        window.copyCoords = function(coords) {
-            navigator.clipboard.writeText(coords).then(() => {
-                alert('✅ 座標已複製：' + coords);
-            }).catch(err => {
-                alert('❌ 複製失敗，請手動複製');
-            });
-        };
-
-        window.copyLink = function(name, url) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert(`✅【${name}】連結已複製！`);
-            }).catch(err => {
-                alert('❌ 複製失敗，請手動複製');
-            });
-        };
-
         fetchData();
-    </script></body></html>
+    </script>
+</body>
+</html>
