@@ -11,8 +11,7 @@
         
         .quick-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px; }
         .link-btn-group { display: flex; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
-        .link-btn-main { flex-grow: 1; padding: 6px 8px; color: #2c3e50; text-decoration: none; font-weight: 600; font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .link-btn-copy { background: #f8f9fa; border: none; border-left: 1px solid #eee; padding: 0 8px; cursor: pointer; font-size: 0.75em; color: #7f8c8d; }
+        .link-btn-main { flex-grow: 1; padding: 6px 8px; color: #2c3e50; text-decoration: none; font-weight: 600; font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 
         .form-container { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .form-group { margin-bottom: 10px; }
@@ -42,7 +41,6 @@
 
         .time-stamp { font-size: 0.8em; color: #7f8c8d; margin-top: 6px !important; }
         
-        /* 修改區域：座標現在時間（橙色大字體） */
         .local-time { 
             font-size: 1.1em; 
             color: #FF0000; 
@@ -145,7 +143,7 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzFZrdhDDM4JzL6cdFgBbnVvttsEJrcyte51MrpmZ2j5ikm9ROqWtf9yUkktTHmCFaf/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxQNCHdTxXGXorbPwO0BPLQ7Cf9-6t0JsCeW4hdk1P7KIgZfqY84VkHum0UdNaL7R7M/exec";
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -224,17 +222,37 @@
             } catch (e) { return ''; }
         }
 
+        // 判斷是否在座標當地時間已跨日過期
+        function isExpired(itemTime, timeZone) {
+            if (!itemTime) return false;
+            try {
+                const pubDate = new Date(itemTime);
+                if (isNaN(pubDate.getTime())) return false;
+                
+                const tz = timeZone || "Asia/Taipei";
+                const pubDateStr = pubDate.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+                const nowDateStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+                
+                return pubDateStr < nowDateStr;
+            } catch (e) {
+                return false;
+            }
+        }
+
         function renderList() {
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
             
-            if (!localDataList || localDataList.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#95a5a6; font-style:italic;">目前沒有座標資料</p>';
+            // 前端過濾：自動隱藏已跨日過期的項目
+            const validDataList = localDataList.filter(item => !isExpired(item.time, item.timeZone));
+
+            if (!validDataList || validDataList.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#95a5a6; font-style:italic;">目前沒有有效的座標資料</p>';
                 updateBatchButton();
                 return;
             }
 
-            const displayList = [...localDataList].reverse();
+            const displayList = [...validDataList].reverse();
             const now = new Date();
 
             displayList.forEach((item) => {
