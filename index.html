@@ -37,6 +37,7 @@
         /* Inline 複製成功提示 */
         .copy-wrapper { display: inline-flex; align-items: center; gap: 5px; }
         button.copy-btn { background-color: #ecf0f1; border: 1px solid #bdc3c7; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.8em; color: #2c3e50; }
+        button.copy-info-btn { background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
         .copy-toast { font-size: 0.75em; color: #27ae60; font-weight: bold; display: none; }
 
         .time-stamp { font-size: 0.8em; color: #7f8c8d; margin-top: 6px !important; }
@@ -51,7 +52,7 @@
         .claimer-text { color: #27ae60; font-weight: bold; background: #e8f8f5; display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-top: 4px !important; }
         .country-tag { background: #eef2f5; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; border: 1px solid #dcdfe6; font-weight: normal; }
         
-        .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .card-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
         button.claim-btn, button.delete-btn { color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
         button.claim-btn { background-color: #2ecc71; }
         button.delete-btn { background-color: #e74c3c; }
@@ -143,7 +144,7 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxQNCHdTxXGXorbPwO0BPLQ7Cf9-6t0JsCeW4hdk1P7KIgZfqY84VkHum0UdNaL7R7M/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwne9hOVlscWFcVWIH0B3m1Jw3LW7L0Td3aWd0aiAaEiG-dQ-GDbrRD8HqWgXnCEW0W/exec";
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -290,7 +291,7 @@
                             <strong>📍 座標：</strong> 
                             <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.coords)}" target="_blank">${item.coords}</a>
                             <span class="copy-wrapper">
-                                <button class="copy-btn" onclick="copyCoords('${item.coords}', this)">📋 複製</button>
+                                <button class="copy-btn" onclick="copyCoords('${item.coords}', this)">📋 複製座標</button>
                                 <span class="copy-toast">已複製！</span>
                             </span>
                         </p>
@@ -299,6 +300,10 @@
                         <p class="time-stamp">發布時間：${displayTime} (台灣時間)</p>
                         ${localTimeSection}
                         <div class="card-actions">
+                            <span class="copy-wrapper">
+                                <button class="copy-info-btn" onclick="copyInfo('${item.name}', '${item.coords}', '${item.timeZone}', this)">📋 複製資訊</button>
+                                <span class="copy-toast">已複製！</span>
+                            </span>
                             ${!isClaimedBool ? `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 領取</button>` : ''}
                             <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
                         </div>
@@ -313,6 +318,19 @@
         // 無彈窗複製座標
         window.copyCoords = function(coords, btnElement) {
             navigator.clipboard.writeText(coords).then(() => {
+                const toast = btnElement.nextElementSibling;
+                toast.style.display = 'inline';
+                setTimeout(() => { toast.style.display = 'none'; }, 2000);
+            });
+        };
+
+        // 複製「目標, 座標, 座標現在時間」
+        window.copyInfo = function(name, coords, timeZone, btnElement) {
+            const now = new Date();
+            const currentLocalTime = timeZone ? formatZonedTime(now, timeZone) : '無時區資訊';
+            const textToCopy = `${name}, ${coords}, ${currentLocalTime}`;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
                 const toast = btnElement.nextElementSibling;
                 toast.style.display = 'inline';
                 setTimeout(() => { toast.style.display = 'none'; }, 2000);
