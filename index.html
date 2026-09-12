@@ -125,7 +125,7 @@
             </div>
             <div class="form-group">
                 <label for="coords">📍 座標 (緯度, 經度)</label>
-                <input type="text" id="coords" placeholder="例如：25.0339, 121.5645" required>
+                <input type="text" id="coords" placeholder="例如：25.0339, 121.5645 或 (25.0339, 121.5645)" required>
             </div>
             <div class="form-group">
                 <label for="note">📝 備註說明 (選填)</label>
@@ -159,12 +159,26 @@
             return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
         }
 
+        // 解析並清洗座標，支援去除前後 ( ) / （ ），同時驗證緯度 (-90~90) 與經度 (-180~180)
         function parseLatLng(coordsStr) {
             if (!coordsStr) return null;
-            const parts = String(coordsStr).split(',');
-            if (parts.length < 2) return null;
-            const lat = parseFloat(parts[0].trim()), lng = parseFloat(parts[1].trim());
-            return (isNaN(lat) || isNaN(lng)) ? null : { lat, lng };
+            
+            // 1. 去除前後括號與多餘空白 (支援半形 () 與全形 （）)
+            let cleaned = String(coordsStr).trim().replace(/^[\(（]\s*|\s*[\)）]$/g, '');
+            
+            // 2. 正規表達式提煉緯度與經度
+            const match = cleaned.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+            if (!match) return null;
+
+            const lat = parseFloat(match[1]);
+            const lng = parseFloat(match[2]);
+
+            // 3. 判斷全球有效座標邊界
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                return { lat, lng, formatted: `${lat}, ${lng}` };
+            }
+
+            return null;
         }
 
         async function fetchLocationMeta(lat, lng) {
@@ -205,9 +219,9 @@
         async function enrichLocationData() {
             for (let item of localDataList) {
                 if (!item.countryCode || !item.timeZone) {
-                    const latLng = parseLatLng(item.coords);
-                    if (latLng) {
-                        const meta = await fetchLocationMeta(latLng.lat, latLng.lng);
+                    const parsed = parseLatLng(item.coords);
+                    if (parsed) {
+                        const meta = await fetchLocationMeta(parsed.lat, parsed.lng);
                         item.countryCode = meta.countryCode;
                         item.timeZone = meta.timeZone;
                     }
@@ -383,33 +397,38 @@
 
         document.getElementById('shareForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const tempId = 'temp_' + Date.now();
-            const coordsVal = document.getElementById('coords').value;
-            const latLng = parseLatLng(coordsVal);
+            const coordsInput = document.getElementById('coords').value;
+            const parsed = parseLatLng(coordsInput);
 
-            let countryCode = null, timeZone = null;
-            if (latLng) {
-                setStatus("🔍 正在辨識國家與時區...", "syncing");
-                const meta = await fetchLocationMeta(latLng.lat, latLng.lng);
-                countryCode = meta.countryCode; timeZone = meta.timeZone;
+            // 格式與範圍檢驗不通過時提示並終止表單送出
+            if (!parsed) {
+                alert('請輸入有效的座標格式！\n例如：25.0339, 121.5645 或 (25.0339, 121.5645)\n緯度需介於 -90~90，經度需介於 -180~180');
+                return;
             }
+
+            const tempId = 'temp_' + Date.now();
+            const cleanCoords = parsed.formatted; // 使用整理乾淨後的座標 (去括號)
+
+            setStatus("🔍 正在辨識國家與時區...", "syncing");
+            const meta = await fetchLocationMeta(parsed.lat, parsed.lng);
 
             const newItem = {
                 id: tempId,
                 publisher: document.getElementById('publisher').value,
                 name: document.getElementById('itemName').value,
-                coords: coordsVal,
+                coords: cleanCoords,
                 note: document.getElementById('note').value,
                 time: new Date().toISOString(),
                 isClaimed: false, claimer: "",
-                countryCode, timeZone
+                countryCode: meta.countryCode, 
+                timeZone: meta.timeZone
             };
 
             localDataList.push(newItem);
             renderList();
 
             document.getElementById('coords').value = '';
-            document.getElementById('note').value = '';
+            document.getElementById('note').value = '未開';
 
             syncToGAS({
                 action: 'add',
