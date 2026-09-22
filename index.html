@@ -145,7 +145,7 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzXnckyU3bukMxG5HYMNN3Pn46WiHokHozUsCymN_lwIbYXVU5Qz0CblTs1EeZxZ7c/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw0sByhomP8sDp_vNgUrDhqqqMWoMJBxumxntnKcZph-5gOqnvuBguLmz9n0-1F4nbS/exec";
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -160,7 +160,6 @@
             return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
         }
 
-        // 解析座標
         function parseLatLng(coordsStr) {
             if (!coordsStr) return null;
             let cleaned = String(coordsStr).trim().replace(/^[\(（]\s*\vert{}\s*[\)）]$/g, '');
@@ -176,7 +175,7 @@
             return null;
         }
 
-        // 【優化1】發布時使用的非同步並行 API 請求
+        // 發布時並行查詢國家與時區
         async function fetchLocationMeta(lat, lng) {
             try {
                 const [geoRes, tzRes] = await Promise.all([
@@ -195,6 +194,32 @@
             }
         }
 
+        // 取得該座標時區的「當前在地時間」
+        function getZonedCurrentTime(timeZone) {
+            if (!timeZone) return '無時區資訊';
+            try {
+                return new Date().toLocaleString('zh-TW', { 
+                    timeZone, 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false 
+                });
+            } catch (e) {
+                return '時區無效';
+            }
+        }
+
+        function formatZonedTime(dateInput, timeZone) {
+            if (!timeZone) return '';
+            try {
+                const d = new Date(dateInput);
+                return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-TW', { timeZone, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+            } catch (e) { return ''; }
+        }
+
         function setStatus(text, type = 'syncing') {
             statusMsg.textContent = text;
             statusMsg.className = 'status-' + type;
@@ -203,9 +228,8 @@
             }
         }
 
-        // 【優化2】快取優先（Stale-While-Revalidate）載入架構
+        // 快取優先 (SWR) 載入
         function fetchData(silent = false) {
-            // 步驟 A: 先讀取本地快取，達到「毫秒級瞬間渲染」
             const cachedData = localStorage.getItem('mushroom_data_cache');
             if (cachedData && !silent) {
                 try {
@@ -216,24 +240,15 @@
 
             if (!silent && !cachedData) setStatus("🔄 正在載入最新資料...", "syncing");
 
-            // 步驟 B: 背景連線 GAS 抓取最新資料
             fetch(GAS_URL)
                 .then(res => res.json())
                 .then(data => {
                     localDataList = data;
-                    localStorage.setItem('mushroom_data_cache', JSON.stringify(data)); // 更新快取
+                    localStorage.setItem('mushroom_data_cache', JSON.stringify(data));
                     renderList();
                     if (!silent) setStatus("", "success");
                 })
                 .catch(error => setStatus("❌ 載入失敗，請確認網路連線", "error"));
-        }
-
-        function formatZonedTime(dateInput, timeZone) {
-            if (!timeZone) return '';
-            try {
-                const d = new Date(dateInput);
-                return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-TW', { timeZone, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-            } catch (e) { return ''; }
         }
 
         function isExpired(itemTime, timeZone) {
@@ -263,7 +278,6 @@
             }
 
             const displayList = [...validDataList].reverse();
-            const now = new Date();
 
             displayList.forEach((item) => {
                 let displayTime = item.time;
@@ -282,10 +296,10 @@
                 let localTimeSection = '';
                 if (item.timeZone) {
                     const publishedLocalTime = formatZonedTime(item.time, item.timeZone);
-                    const currentLocalTime = formatZonedTime(now, item.timeZone);
+                    const nowLocalTime = getZonedCurrentTime(item.timeZone);
                     localTimeSection = `
-                        <p style="font-size: 0.8em; color: #7f8c8d; margin-top: 2px !important;">📅 發布時區時間：${publishedLocalTime}</p>
-                        <p class="local-time">🕒 座標現在時間：${currentLocalTime}</p>
+                        <p style="font-size: 0.8em; color: #7f8c8d; margin-top: 2px !important;">📅 發布時時區時間：${publishedLocalTime}</p>
+                        <p class="local-time">🕒 座標在地目前時間：<span class="live-clock" data-timezone="${item.timeZone}">${nowLocalTime}</span></p>
                     `;
                 }
 
@@ -324,6 +338,17 @@
             updateBatchButton();
         }
 
+        // 每秒定時自動更新所有卡片上的在地時間
+        setInterval(() => {
+            const clocks = document.querySelectorAll('.live-clock');
+            clocks.forEach(clock => {
+                const tz = clock.getAttribute('data-timezone');
+                if (tz) {
+                    clock.textContent = getZonedCurrentTime(tz);
+                }
+            });
+        }, 1000);
+
         window.copyCoords = function(coords, btnElement) {
             navigator.clipboard.writeText(coords).then(() => {
                 const toast = btnElement.nextElementSibling;
@@ -333,9 +358,8 @@
         };
 
         window.copyInfo = function(name, coords, timeZone, btnElement) {
-            const now = new Date();
-            const currentLocalTime = timeZone ? formatZonedTime(now, timeZone) : '無時區資訊';
-            const textToCopy = `${name}, ${coords}, ${currentLocalTime}`;
+            const currentLocalTime = timeZone ? getZonedCurrentTime(timeZone) : '無時區資訊';
+            const textToCopy = `${name}, ${coords}, 在地時間: ${currentLocalTime}`;
 
             navigator.clipboard.writeText(textToCopy).then(() => {
                 const toast = btnElement.nextElementSibling;
@@ -378,7 +402,7 @@
                 .then(res => res.json())
                 .then(result => {
                     setStatus(`✅ ${actionName}成功！`, "success");
-                    fetchData(true); // 背景刷新數據
+                    fetchData(true);
                 })
                 .catch(error => {
                     setStatus(`⚠️ 同步異常，重新整理中...`, "error");
@@ -422,7 +446,6 @@
             document.getElementById('coords').value = '';
             document.getElementById('note').value = '未開';
 
-            // 將 countryCode 與 timeZone 傳遞給 GAS 寫入資料庫
             syncToGAS({
                 action: 'add',
                 publisher: newItem.publisher,
