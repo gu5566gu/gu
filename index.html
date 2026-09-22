@@ -145,7 +145,7 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwne9hOVlscWFcVWIH0B3m1Jw3LW7L0Td3aWd0aiAaEiG-dQ-GDbrRD8HqWgXnCEW0W/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzXnckyU3bukMxG5HYMNN3Pn46WiHokHozUsCymN_lwIbYXVU5Qz0CblTs1EeZxZ7c/exec";
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -160,40 +160,39 @@
             return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
         }
 
-        // 解析並清洗座標，支援去除前後 ( ) / （ ），同時驗證緯度 (-90~90) 與經度 (-180~180)
+        // 解析座標
         function parseLatLng(coordsStr) {
             if (!coordsStr) return null;
-            
-            // 1. 去除前後括號與多餘空白 (支援半形 () 與全形 （）)
-            let cleaned = String(coordsStr).trim().replace(/^[\(（]\s*|\s*[\)）]$/g, '');
-            
-            // 2. 正規表達式提煉緯度與經度
+            let cleaned = String(coordsStr).trim().replace(/^[\(（]\s*\vert{}\s*[\)）]$/g, '');
             const match = cleaned.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
             if (!match) return null;
 
             const lat = parseFloat(match[1]);
             const lng = parseFloat(match[2]);
 
-            // 3. 判斷全球有效座標邊界
             if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                 return { lat, lng, formatted: `${lat}, ${lng}` };
             }
-
             return null;
         }
 
+        // 【優化1】發布時使用的非同步並行 API 請求
         async function fetchLocationMeta(lat, lng) {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3`);
-                const data = await res.json();
-                if (data?.address?.country_code) {
-                    const countryCode = data.address.country_code.toUpperCase();
-                    const tzRes = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
-                    const tzData = await tzRes.json();
-                    return { countryCode, timeZone: tzData.timeZone || null };
-                }
-            } catch (err) {}
-            return { countryCode: null, timeZone: null };
+                const [geoRes, tzRes] = await Promise.all([
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=3`),
+                    fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`)
+                ]);
+                const data = await geoRes.json();
+                const tzData = await tzRes.json();
+
+                return {
+                    countryCode: data?.address?.country_code ? data.address.country_code.toUpperCase() : null,
+                    timeZone: tzData?.timeZone || null
+                };
+            } catch (err) {
+                return { countryCode: null, timeZone: null };
+            }
         }
 
         function setStatus(text, type = 'syncing') {
@@ -204,30 +203,29 @@
             }
         }
 
+        // 【優化2】快取優先（Stale-While-Revalidate）載入架構
         function fetchData(silent = false) {
-            if (!silent) setStatus("🔄 正在載入最新資料...", "syncing");
+            // 步驟 A: 先讀取本地快取，達到「毫秒級瞬間渲染」
+            const cachedData = localStorage.getItem('mushroom_data_cache');
+            if (cachedData && !silent) {
+                try {
+                    localDataList = JSON.parse(cachedData);
+                    renderList();
+                } catch (e) {}
+            }
+
+            if (!silent && !cachedData) setStatus("🔄 正在載入最新資料...", "syncing");
+
+            // 步驟 B: 背景連線 GAS 抓取最新資料
             fetch(GAS_URL)
                 .then(res => res.json())
-                .then(async data => {
+                .then(data => {
                     localDataList = data;
-                    await enrichLocationData();
+                    localStorage.setItem('mushroom_data_cache', JSON.stringify(data)); // 更新快取
                     renderList();
                     if (!silent) setStatus("", "success");
                 })
                 .catch(error => setStatus("❌ 載入失敗，請確認網路連線", "error"));
-        }
-
-        async function enrichLocationData() {
-            for (let item of localDataList) {
-                if (!item.countryCode || !item.timeZone) {
-                    const parsed = parseLatLng(item.coords);
-                    if (parsed) {
-                        const meta = await fetchLocationMeta(parsed.lat, parsed.lng);
-                        item.countryCode = meta.countryCode;
-                        item.timeZone = meta.timeZone;
-                    }
-                }
-            }
         }
 
         function formatZonedTime(dateInput, timeZone) {
@@ -238,7 +236,6 @@
             } catch (e) { return ''; }
         }
 
-        // 判斷是否在座標當地時間已跨日過期
         function isExpired(itemTime, timeZone) {
             if (!itemTime) return false;
             try {
@@ -246,20 +243,17 @@
                 if (isNaN(pubDate.getTime())) return false;
                 
                 const tz = timeZone || "Asia/Taipei";
-                const pubDateStr = pubDate.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+                const pubDateStr = pubDate.toLocaleDateString('en-CA', { timeZone: tz });
                 const nowDateStr = new Date().toLocaleDateString('en-CA', { timeZone: tz });
                 
                 return pubDateStr < nowDateStr;
-            } catch (e) {
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
         function renderList() {
             const container = document.getElementById('listContainer');
             container.innerHTML = '';
             
-            // 前端過濾：自動隱藏已跨日過期的項目
             const validDataList = localDataList.filter(item => !isExpired(item.time, item.timeZone));
 
             if (!validDataList || validDataList.length === 0) {
@@ -330,7 +324,6 @@
             updateBatchButton();
         }
 
-        // 無彈窗複製座標
         window.copyCoords = function(coords, btnElement) {
             navigator.clipboard.writeText(coords).then(() => {
                 const toast = btnElement.nextElementSibling;
@@ -339,7 +332,6 @@
             });
         };
 
-        // 複製「目標, 座標, 座標現在時間」
         window.copyInfo = function(name, coords, timeZone, btnElement) {
             const now = new Date();
             const currentLocalTime = timeZone ? formatZonedTime(now, timeZone) : '無時區資訊';
@@ -352,7 +344,6 @@
             });
         };
 
-        // 多選與批量操作邏輯
         window.toggleSelectAll = function(master) {
             document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = master.checked);
             updateBatchButton();
@@ -366,11 +357,7 @@
             
             const allCheckboxes = document.querySelectorAll('.item-checkbox');
             const selectAllCb = document.getElementById('selectAll');
-            if (allCheckboxes.length > 0 && selected.length === allCheckboxes.length) {
-                selectAllCb.checked = true;
-            } else {
-                selectAllCb.checked = false;
-            }
+            selectAllCb.checked = (allCheckboxes.length > 0 && selected.length === allCheckboxes.length);
         };
 
         window.deleteSelectedItems = function() {
@@ -379,8 +366,8 @@
 
             if (confirm(`確定要一次刪除這 ${selectedIds.length} 筆座標嗎？`)) {
                 localDataList = localDataList.filter(item => !selectedIds.includes(item.id));
+                localStorage.setItem('mushroom_data_cache', JSON.stringify(localDataList));
                 renderList();
-
                 syncToGAS({ action: 'batchDelete', ids: selectedIds }, "批量刪除");
             }
         };
@@ -389,7 +376,10 @@
             setStatus(`⏳ 背景同步中 (${actionName})...`, "syncing");
             fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) })
                 .then(res => res.json())
-                .then(result => setStatus(`✅ ${actionName}成功！`, "success"))
+                .then(result => {
+                    setStatus(`✅ ${actionName}成功！`, "success");
+                    fetchData(true); // 背景刷新數據
+                })
                 .catch(error => {
                     setStatus(`⚠️ 同步異常，重新整理中...`, "error");
                     fetchData(true);
@@ -401,14 +391,13 @@
             const coordsInput = document.getElementById('coords').value;
             const parsed = parseLatLng(coordsInput);
 
-            // 格式與範圍檢驗不通過時提示並終止表單送出
             if (!parsed) {
                 alert('請輸入有效的座標格式！\n例如：25.0339, 121.5645 或 (25.0339, 121.5645)\n緯度需介於 -90~90，經度需介於 -180~180');
                 return;
             }
 
             const tempId = 'temp_' + Date.now();
-            const cleanCoords = parsed.formatted; // 使用整理乾淨後的座標 (去括號)
+            const cleanCoords = parsed.formatted;
 
             setStatus("🔍 正在辨識國家與時區...", "syncing");
             const meta = await fetchLocationMeta(parsed.lat, parsed.lng);
@@ -420,17 +409,20 @@
                 coords: cleanCoords,
                 note: document.getElementById('note').value,
                 time: new Date().toISOString(),
-                isClaimed: false, claimer: "",
+                isClaimed: false, 
+                claimer: "",
                 countryCode: meta.countryCode, 
                 timeZone: meta.timeZone
             };
 
             localDataList.push(newItem);
+            localStorage.setItem('mushroom_data_cache', JSON.stringify(localDataList));
             renderList();
 
             document.getElementById('coords').value = '';
             document.getElementById('note').value = '未開';
 
+            // 將 countryCode 與 timeZone 傳遞給 GAS 寫入資料庫
             syncToGAS({
                 action: 'add',
                 publisher: newItem.publisher,
@@ -438,6 +430,7 @@
                 coords: newItem.coords,
                 note: newItem.note,
                 time: newItem.time,
+                countryCode: newItem.countryCode,
                 timeZone: newItem.timeZone
             }, "發布");
         });
@@ -445,7 +438,9 @@
         window.claimItem = function(id) {
             const target = localDataList.find(item => item.id === id);
             if (target) {
-                target.isClaimed = true; target.claimer = "已領取";
+                target.isClaimed = true; 
+                target.claimer = "已領取";
+                localStorage.setItem('mushroom_data_cache', JSON.stringify(localDataList));
                 renderList();
                 syncToGAS({ action: 'claim', id, claimer: "已領取" }, "領取");
             }
@@ -454,11 +449,13 @@
         window.deleteItem = function(id) {
             if (confirm('確定要刪除此座標嗎？')) {
                 localDataList = localDataList.filter(item => item.id !== id);
+                localStorage.setItem('mushroom_data_cache', JSON.stringify(localDataList));
                 renderList();
                 syncToGAS({ action: 'delete', id }, "刪除");
             }
         };
 
+        // 啟動頁面
         fetchData();
     </script>
 </body>
