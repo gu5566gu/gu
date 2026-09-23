@@ -328,7 +328,7 @@
                         <p><strong>📝 備註：</strong> ${item.note || '無'}</p>
                         ${isClaimedBool ? `<p class="claimer-text">✅ 已領取</p>` : ''}
                         <p class="time-stamp">發布時間：${displayTime} (台灣時間)</p>
-                        <p class="local-time">🕒 在地目前時間：${nowLocalTime}</p>
+                        <p class="local-time">🕒 座標目前時間：${nowLocalTime}</p>
                         <div class="card-actions">
                             <span class="copy-wrapper">
                                 <button class="copy-info-btn" onclick="copyInfo('${item.name}', '${item.coords}', '${item.timeZone || ''}', this)">📋 複製資訊</button>
