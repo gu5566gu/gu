@@ -130,7 +130,7 @@
             </div>
             <div class="form-group">
                 <label for="coords">📍 座標 (緯度, 經度)</label>
-                <input type="text" id="coords" placeholder="例如：25.0339, 121.5645 或 (25.0339, 121.5645)" required>
+                <input type="text" id="coords" placeholder="例如：25.0339, 121.5645 或 25.0339,121.5645" required>
             </div>
             <div class="form-group">
                 <label for="note">📝 備註</label>
@@ -149,7 +149,7 @@
     <div id="listContainer"></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwne9hOVlscWFcVWIH0B3m1Jw3LW7L0Td3aWd0aiAaEiG-dQ-GDbrRD8HqWgXnCEW0W/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyK56oCp2FdL0zF08kgSsZvbJhqSRFxY9-mn4P7r_aplldIaui_7kGB8PeM_MEOjXig/exec";
         let localDataList = [];
         const statusMsg = document.getElementById('statusMsg');
         const regionNamesInZh = new Intl.DisplayNames(['zh-Hant'], { type: 'region' });
@@ -164,9 +164,14 @@
             return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
         }
 
+        // 座標相容解析：支援全形/半形逗號、前後括號、多餘空格
         function parseLatLng(coordsStr) {
             if (!coordsStr) return null;
-            let cleaned = String(coordsStr).trim().replace(/^[\(（]\s*\vert{}\s*[\)）]$/g, '');
+            let cleaned = String(coordsStr)
+                .replace(/，/g, ',')
+                .trim()
+                .replace(/^[\(（]\s*/, '')                 .replace(/\s*[\)）]$/, '');
+
             const match = cleaned.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
             if (!match) return null;
 
@@ -198,17 +203,14 @@
             }
         }
 
-        // 根據經度計算粗略的時區位移 (Fallback 備用方案)
         function getEstimatedOffsetByLng(lng) {
-            if (lng === null || lng === undefined || isNaN(lng)) return 8; // 預設 +8 (台灣)
+            if (lng === null || lng === undefined || isNaN(lng)) return 8;
             return Math.round(lng / 15);
         }
 
-        // 取得指定時區/座標的「在地時間」（格式：MM/DD HH:mm）
         function getZonedCurrentTime(timeZone, coordsStr) {
             const now = new Date();
             
-            // 優先嘗試標準 IANA 時區
             if (timeZone) {
                 try {
                     return now.toLocaleString('zh-TW', { 
@@ -220,7 +222,6 @@
                 } catch (e) {}
             }
 
-            // 若無時區，用經度手動推算時間
             const parsed = parseLatLng(coordsStr);
             const offsetHours = parsed ? getEstimatedOffsetByLng(parsed.lng) : 8;
             
@@ -307,7 +308,6 @@
                 const countryTagHtml = item.countryCode ? `<span class="country-tag">${flagIcon} ${countryNameZh}</span>` : '';
                 const isClaimedBool = item.isClaimed === true || item.isClaimed === "true";
 
-                // 渲染當下計算一次在地時間
                 const nowLocalTime = getZonedCurrentTime(item.timeZone, item.coords);
 
                 const card = document.createElement('div');
@@ -334,7 +334,7 @@
                                 <button class="copy-info-btn" onclick="copyInfo('${item.name}', '${item.coords}', '${item.timeZone || ''}', this)">📋 複製資訊</button>
                                 <span class="copy-toast">已複製！</span>
                             </span>
-                            ${!isClaimedBool ? `<button class="claim-btn" onclick="claimItem('${item.id}')">✅ 領取</button>` : ''}
+                            <button class="claim-btn" onclick="claimItem('${item.id}')">✅ 領取</button>
                             <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ 刪除</button>
                         </div>
                     </div>
@@ -454,14 +454,13 @@
             }, "發布");
         });
 
+        // 點擊「領取」時，從本地直接刪除並通知後端刪除
         window.claimItem = function(id) {
-            const target = localDataList.find(item => item.id === id);
-            if (target) {
-                target.isClaimed = true; 
-                target.claimer = "已領取";
+            if (confirm('確定要領取並刪除此座標嗎？')) {
+                localDataList = localDataList.filter(item => item.id !== id);
                 localStorage.setItem('mushroom_data_cache', JSON.stringify(localDataList));
                 renderList();
-                syncToGAS({ action: 'claim', id, claimer: "已領取" }, "領取");
+                syncToGAS({ action: 'claim', id }, "領取並刪除");
             }
         };
 
